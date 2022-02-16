@@ -20,9 +20,13 @@ add_subdirectory(third_party/cpr)
 add_subdirectory(third_party/json)
 add_subdirectory(third_party/gumbo-parser-code)
 
+#add_subdirectory(third_party/libpqxx)
+
 add_executable(${PROJECT_NAME} main.cpp)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE cpr::cpr)
 target_link_libraries(${PROJECT_NAME} PRIVATE nlohmann_json::nlohmann_json)
 target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} PRIVATE gumbo-parser)
+
+#target_link_libraries(${PROJECT_NAME} PRIVATE libpqxx::libpqxx) PostgreSQL нужно установить
