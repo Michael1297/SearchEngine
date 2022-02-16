@@ -1,11 +1,12 @@
-#include "mainwindow.h"
+#include <iostream>
+#include <cpr/cpr.h>
+#include "nlohmann/json.hpp"
+#include "gumbo.h"
 
-#include <QApplication>
+int main() {
+    cpr::Response r = cpr::Get(cpr::Url("http://httpbin.org"));
+    auto* parse = gumbo_parse(r.text.c_str());
 
-int main(int argc, char *argv[])
-{
-    QApplication a(argc, argv);
-    MainWindow w;
-    w.show();
-    return a.exec();
+    std::cout << r.text;
+
 }
