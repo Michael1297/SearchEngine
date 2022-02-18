@@ -1,8 +1,8 @@
 [submodule "third_party/json"]
 	path = third_party/json
 	url = https://github.com/nlohmann/json.git
-[submodule "third_party/gumbo-parser-code/gumbo-parser"]
-	path = third_party/gumbo-parser-code/gumbo-parser
+[submodule "third_party/gumbo-parser"]
+	path = third_party/gumbo-parser
 	url = https://github.com/google/gumbo-parser.git
 [submodule "third_party/cpr"]
 	path = third_party/cpr
@@ -10,3 +10,6 @@
 [submodule "third_party/libpqxx"]
 	path = third_party/libpqxx
 	url = https://github.com/jtv/libpqxx.git
+[submodule "third_party/OleanderStemmingLibrary"]
+	path = third_party/OleanderStemmingLibrary
+	url = https://github.com/OleanderSoftware/OleanderStemmingLibrary.git
