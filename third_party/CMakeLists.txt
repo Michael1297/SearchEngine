@@ -29,10 +29,5 @@ set(GUMBO_SOURCES
         gumbo-parser/src/vector.h
         gumbo-parser/src/vector.c)
 
-if (MSVC)
-    include_directories(gumbo-parser/visualc/include)
-    set(GUMBO_SOURCES ${GUMBO_SOURCES} gumbo-parser/visualc/include/strings.h)
-endif()
-
 add_library(gumbo-parser STATIC ${GUMBO_SOURCES})
 target_include_directories(gumbo-parser PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/gumbo-parser/src)

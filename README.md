@@ -53,8 +53,8 @@ frequency, равным 1.\
 # Minimal required build settings:
 * cmake 3.5
 * mingw 8.1.0 64-bit
-* C++ 11
-* Qt 5.15.2
+* C++ 14
+* MySQL 8.0 ?
 
 # Checklist:
 - [ ] Реализован метод /api/startIndexing.

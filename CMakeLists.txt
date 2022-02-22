@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 
 project(SearchEngine)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 11)
 
 set(BUILD_CPR_TESTS OFF)
 set(CMAKE_USE_OPENSSL OFF)
@@ -21,7 +21,8 @@ add_subdirectory(third_party/cpr)
 add_subdirectory(third_party/json)
 add_subdirectory(third_party) #gumbo-parser
 add_subdirectory(third_party/OleanderStemmingLibrary)
-#add_subdirectory(third_party/libpqxx)              PostgreSQL нужно установить
+add_subdirectory(third_party/nanodbc)
+add_subdirectory(third_party/inipp)
 
 add_subdirectory(src)
 
@@ -30,4 +31,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE nlohmann_json::nlohmann_json)
 target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} PRIVATE gumbo-parser)
 target_link_libraries(${PROJECT_NAME} PRIVATE oleanderstemminglibrary)
-#target_link_libraries(${PROJECT_NAME} PRIVATE libpqxx::libpqxx)    PostgreSQL нужно установить
+target_link_libraries(${PROJECT_NAME} PRIVATE nanodbc)
+target_link_libraries(${PROJECT_NAME} PRIVATE inipp::inipp)
+
+configure_file(config.ini ${CMAKE_CURRENT_BINARY_DIR}/config.ini COPYONLY)
