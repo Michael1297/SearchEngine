@@ -13,3 +13,8 @@ Command Line Tools Installation Directory: C:\Program Files\PostgreSQL\14
 pgAdmin4 Installation Directory: C:\Program Files\PostgreSQL\14\pgAdmin 4
 Stack Builder Installation Directory: C:\Program Files\PostgreSQL\14
 Installation Log: C:\Users\1\AppData\Local\Temp\install-postgresql.log
+
+у mysql порт: 3306
+x protocol port: 33060
+pipe name: MYSQL
+password: password

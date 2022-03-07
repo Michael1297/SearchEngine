@@ -2,19 +2,10 @@
 #include "nlohmann/json.hpp"
 #include "SearchEngine.h"
 #include <nanodbc/nanodbc.h>
-#include <fstream>
-#include "inipp.h"
 
 int main() {
-    inipp::Ini<char> config;
-    std::ifstream ini_file("config.ini");
-    config.parse(ini_file);
-    std::string host;
-    inipp::get_value(config.sections["DEFAULT"], "host", host);
-    std::cout << host << "\n";
-    ini_file.close();
-    //SearchEngine searchEngine("videocardz.com/");
-    //searchEngine.startIndexing();
+    SearchEngine searchEngine("http://www.videocardz.com/");
+    searchEngine.startIndexing();
 
     /*try
     {

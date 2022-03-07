@@ -3,15 +3,15 @@
 #define MAIN_CPP_SEARCHENGINE_H
 
 #include <string>
-#include <regex>
+#include <memory>
 #include <unordered_set>
 #include <olestem/stemming/english_stem.h>
 #include "GumboAPI.h"
+#include "HttpTool.h"
 
 class SearchEngine{
-    std::string link;
+    std::unique_ptr<HttpTool> domain;
     std::regex not_word = std::regex("^\\W+$|^\\d+$");  //рандомные символы вместо слова
-    std::regex own_link;                                   //коректныя ссылка
     stemming::english_stem<> StemEnglish;
     std::unordered_set<std::string> words;      //Todo добавлено временно
     std::string StemEnglishFunc(std::string str);          //функция стемминга слова
