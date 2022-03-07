@@ -2,10 +2,16 @@
 #include "nlohmann/json.hpp"
 #include "SearchEngine.h"
 #include <nanodbc/nanodbc.h>
+#include "Config.h"
 
 int main() {
-    SearchEngine searchEngine("http://www.videocardz.com/");
-    searchEngine.startIndexing();
+    Config config;
+    std::cout << config.name << "\n";
+    //std::string test = "тест";
+    //std::cout << test << "\n";
+
+    //SearchEngine searchEngine("http://www.videocardz.com/");
+    //searchEngine.startIndexing();
 
     /*try
     {
