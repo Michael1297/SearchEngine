@@ -1,12 +1,20 @@
 #include <iostream>
+#include <clocale>
 #include "nlohmann/json.hpp"
 #include "SearchEngine.h"
 #include <nanodbc/nanodbc.h>
 #include "Config.h"
+#include "Stemming.h"
 
 int main() {
-    Config config;
-    std::cout << config.name << "\n";
+    Stemming stemming;
+
+    std::cout << stemming.stemming("документация") << "\n";
+    std::cout << stemming.stemming("documentation") << "\n";
+    //Config config;
+    //std::cout << config.name << "\n";
+    //for(auto i : nanodbc::list_drivers()) std::cout << i.name << "\n";
+
     //std::string test = "тест";
     //std::cout << test << "\n";
 
@@ -38,4 +46,5 @@ int main() {
     //std::wcout << text1 << "\n";
     system("pause");
 */
+
 }

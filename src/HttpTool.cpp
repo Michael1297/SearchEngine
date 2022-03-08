@@ -22,7 +22,10 @@ HttpTool::HttpTool(std::string link){
     if(link.empty()) throw InvalidLinkException();
 
     domain = link;
-    own_link_regex = std::regex("(^https?://|^)(www\\.|)" + domain + "(/\\S*$|$)", icase);
+    for(int i = 1; i < link.size() - 1; i++){
+        if(link[i] == '.') link.insert(link.begin() + i++, '\\');       //экранирование '.' в link для применения в regex
+    }
+    own_link_regex = std::regex("(^https?://|^)(www\\.|)" + link + "(/\\S*$|$)", icase);
 }
 
 //проверка - ссылка принадлежит домену
