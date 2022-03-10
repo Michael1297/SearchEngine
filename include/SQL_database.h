@@ -6,7 +6,7 @@
 #include <nanodbc/nanodbc.h>
 
 class SQL_database{
-    std::unique_ptr<nanodbc::connection> conn;
+    std::unique_ptr<nanodbc::connection> connection;
 public:
     SQL_database();
 };
