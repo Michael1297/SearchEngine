@@ -9,13 +9,15 @@ set(CMAKE_USE_OPENSSL OFF)
 set(JSON_BuildTests OFF CACHE INTERNAL "")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-set(Boost_INCLUDE_DIR "C:\\boost_1_77_0")
-set(Boost_LIBRARY_DIR "C:\\boost_1_77_0\\stage\\lib")
 set(INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
 
+# Boost ============================================================
+set(Boost_INCLUDE_DIR "C:\\boost_1_77_0")
+set(Boost_LIBRARY_DIR "C:\\boost_1_77_0\\stage\\lib")
 find_package(Boost COMPONENTS REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 link_directories(${Boost_LIBRARY_DIR})
+#===================================================================
 
 add_subdirectory(third_party/cpr)
 add_subdirectory(third_party/json)
