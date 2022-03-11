@@ -64,6 +64,13 @@ void SQL_database::drop() {
 
 void SQL_database::insert(std::string& site) {
     std::stringstream command;
-    command << "INSERT INTO sites (site) value (\"" << site << "\")";
+    command << "INSERT INTO sites (site) value (\"" << site << "\");";
     execute(*database, NANODBC_TEXT(command.str()));
+}
+
+bool SQL_database::contains(std::string& site) {
+    std::stringstream command;
+    command << "SELECT * FROM sites WHERE site=\"" << site << "\";";
+    auto result = execute(*database, NANODBC_TEXT(command.str()));
+    return result.next();
 }

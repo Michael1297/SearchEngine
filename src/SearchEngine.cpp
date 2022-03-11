@@ -10,7 +10,7 @@ void SearchEngine::indexing(std::string current_link){
     GumboAPI html_parse(r.text);
     html_parse.get_links([this](std::string links){
         if(domain->is_ownLink(links)) {
-            database.insert(links);
+            if(!database.contains(links)) database.insert(links);
             std::cout << links << "\n";
         }
     });

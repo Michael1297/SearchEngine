@@ -13,7 +13,7 @@ public:
     void create();  //создать бд
     void drop();    //удалить бд
     void insert(std::string& site);  //добавить сайт в бд
-
+    bool contains(std::string& site);
 };
 
 #endif //SEARCHENGINE_SQL_DATABASE_H
