@@ -9,7 +9,10 @@ void SearchEngine::indexing(std::string current_link){
     cpr::Response r = cpr::Get(cpr::Url(current_link));
     GumboAPI html_parse(r.text);
     html_parse.get_links([this](std::string links){
-        if(domain->is_ownLink(links)) std::cout << links << "\n";
+        if(domain->is_ownLink(links)) {
+            database.insert(links);
+            std::cout << links << "\n";
+        }
     });
 
     html_parse.get_text([this](std::string out){
@@ -18,7 +21,8 @@ void SearchEngine::indexing(std::string current_link){
 }
 
 void SearchEngine::startIndexing() {
-    std::unordered_set<std::string> links;
+    database.create();
+    std::unordered_set<std::string> links;      //TODO удалить
     std::vector<std::thread> threads;
     indexing(domain->getDomain());
     for(auto& word : words) std::cout << word << "\n";

@@ -6,9 +6,14 @@
 #include <nanodbc/nanodbc.h>
 
 class SQL_database{
-    std::unique_ptr<nanodbc::connection> connection;
+    std::string database_name;
+    std::unique_ptr<nanodbc::connection> database;
 public:
     SQL_database();
+    void create();  //создать бд
+    void drop();    //удалить бд
+    void insert(std::string& site);  //добавить сайт в бд
+
 };
 
 #endif //SEARCHENGINE_SQL_DATABASE_H

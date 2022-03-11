@@ -9,6 +9,7 @@
 class Config{
 public:
     Config();
+    std::string driver;
     std::string server;
     std::string port;
     std::string database;
@@ -21,6 +22,9 @@ Config::Config() {
     mINI::INIFile config_file("config.ini");
     mINI::INIStructure config;
     if(!config_file.read(config)) throw MissingConfigFileException();
+
+    driver = config["DEFAULT"]["driver"];
+    if(driver.empty()) throw InvalidConfigFileException();
 
     server = config["DEFAULT"]["server"];
     if(server.empty()) throw InvalidConfigFileException();

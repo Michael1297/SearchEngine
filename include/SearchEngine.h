@@ -8,12 +8,14 @@
 #include "GumboAPI.h"
 #include "HttpTool.h"
 #include "Stemming.h"
+#include "SQL_database.h"
 
 class SearchEngine{
     std::unique_ptr<HttpTool> domain;
     std::regex not_word = std::regex("^\\W+$|^\\d+$");  //рандомные символы вместо слова
     std::unordered_set<std::string> words;      //Todo добавлено временно
     Stemming stemming;                                      //стемминг слова
+    SQL_database database;                                  //база данных
     void indexing(std::string current_link);
 public:
 
