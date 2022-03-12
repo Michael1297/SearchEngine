@@ -21,9 +21,10 @@ link_directories(${Boost_LIBRARY_DIR})
 
 add_subdirectory(third_party/cpr)
 add_subdirectory(third_party/json)
-add_subdirectory(third_party) #gumbo-parser
-add_subdirectory(third_party/OleanderStemmingLibrary)
-add_subdirectory(third_party/nanodbc)
+add_subdirectory(third_party)                           #gumbo-parser + ini parser
+add_subdirectory(third_party/OleanderStemmingLibrary)   #стимминг слов
+add_subdirectory(third_party/nanodbc)                   #управление SQL бд
+add_subdirectory(third_party/fmt)                       #Форматирование строк
 
 add_subdirectory(src)
 
@@ -33,6 +34,7 @@ target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} PRIVATE third_party_library)
 target_link_libraries(${PROJECT_NAME} PRIVATE oleanderstemminglibrary)
 target_link_libraries(${PROJECT_NAME} PRIVATE nanodbc)
+target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt)
 
 #копирование файла
 configure_file(config.ini ${CMAKE_CURRENT_BINARY_DIR}/config.ini COPYONLY)

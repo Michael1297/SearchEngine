@@ -12,6 +12,7 @@ public:
     SQL_database();
     void create();  //создать бд
     void drop();    //удалить бд
+    void use();     //использовать созданную бд
     void insert(std::string& site);  //добавить сайт в бд
     bool contains(std::string& site);
 };

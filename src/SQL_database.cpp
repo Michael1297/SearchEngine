@@ -1,24 +1,20 @@
 #include "SQL_database.h"
-#include <sstream>
+#include <fmt/core.h>
 #include "Config.h"
 #include <iostream> //TODO удалить
 
 SQL_database::SQL_database() {
-    //  https://docs.microsoft.com/en-us/sql/integration-services/import-export-data/connect-to-a-mysql-data-source-sql-server-import-and-export-wizard?view=sql-server-2017
-    //  Driver={MySQL ODBC 5.3 ANSI Driver};Server=<server>;Database=<database>;UID=<user id>;PWD=<password>
     Config config;      //данные из config.ini файла
     database_name = config.database;
-    std::stringstream connection_string; //строка подключения к бд
 
-    connection_string
-    << "Driver=" << config.driver << ";"
-    << "Server=" << config.server << ";"
-    << "Port=" << config.port << ";"
-    << "UID=" << config.login << ";"
-    << "PWD=" << config.password << ";";
+    //строка подключения к бд
+    //  https://docs.microsoft.com/en-us/sql/integration-services/import-export-data/connect-to-a-mysql-data-source-sql-server-import-and-export-wizard?view=sql-server-2017
+    //  Driver={MySQL ODBC 8.0 ANSI Driver};Server=<server>;Database=<database>;UID=<user id>;PWD=<password>
+    std::string connection_string = fmt::format("Driver={};Server={};Port={};UID={};PWD={};",
+                                                config.driver, config.server, config.port, config.login, config.password);
 
     try{
-        database = std::make_unique<nanodbc::connection>(NANODBC_TEXT(connection_string.str()));
+        database = std::make_unique<nanodbc::connection>(NANODBC_TEXT(connection_string));
         std::cout << database->dbms_name() << "\n";//TODO удалить
     }
     catch (std::runtime_error const& e){
@@ -28,49 +24,46 @@ SQL_database::SQL_database() {
 
 void SQL_database::create() {
     this->drop();
-    std::stringstream command;
 
-    command << "CREATE DATABASE " << database_name << ";";
-    execute(*database, NANODBC_TEXT(command.str()));
-    command.str("");
+    std::string command = fmt::format("CREATE DATABASE {};", database_name);
+    execute(*database, NANODBC_TEXT(command));
 
-    command << "USE " << database_name << ";";
-    execute(*database, NANODBC_TEXT(command.str()));
-    command.str("");
+    this->use();
 
-    command << "CREATE TABLE sites("
-               "id INT AUTO_INCREMENT PRIMARY KEY, "
-               "site TEXT NOT NULL, "
-               "is_indexed BOOLEAN NOT NULL DEFAULT false"
-               ");";
-    execute(*database, NANODBC_TEXT(command.str()));
-    command.str("");
+    command = "CREATE TABLE sites("
+              "id INT AUTO_INCREMENT PRIMARY KEY, "
+              "site TEXT NOT NULL, "
+              "is_indexed BOOLEAN NOT NULL DEFAULT false"
+              ");";
+    execute(*database, NANODBC_TEXT(command));
 
-    command << "CREATE TABLE words("
-               "id INT AUTO_INCREMENT PRIMARY KEY, "
-               "word TEXT NOT NULL, "
-               "quality INT NOT NULL DEFAULT 0, "
-               "site_id INT NOT NULL, "
-               "FOREIGN KEY (site_id) references sites(id) "
-               ");";
-    execute(*database, NANODBC_TEXT(command.str()));
+    command = "CREATE TABLE words("
+              "id INT AUTO_INCREMENT PRIMARY KEY, "
+              "word TEXT NOT NULL, "
+              "quality INT NOT NULL DEFAULT 0, "
+              "site_id INT NOT NULL, "
+              "FOREIGN KEY (site_id) references sites(id) "
+              ");";
+    execute(*database, NANODBC_TEXT(command));
 }
 
 void SQL_database::drop() {
-    std::stringstream command;
-    command << "DROP DATABASE IF EXISTS " << database_name << ";";
-    execute(*database, NANODBC_TEXT(command.str()));
+    std::string command = fmt::format("DROP DATABASE IF EXISTS {};", database_name);
+    execute(*database, NANODBC_TEXT(command));
+}
+
+void SQL_database::use() {
+    std::string command = fmt::format("USE {};", database_name);
+    execute(*database, NANODBC_TEXT(command));
 }
 
 void SQL_database::insert(std::string& site) {
-    std::stringstream command;
-    command << "INSERT INTO sites (site) value (\"" << site << "\");";
-    execute(*database, NANODBC_TEXT(command.str()));
+    std::string command = fmt::format("INSERT INTO sites (site) value (\"{}\");", site);
+    execute(*database, NANODBC_TEXT(command));
 }
 
 bool SQL_database::contains(std::string& site) {
-    std::stringstream command;
-    command << "SELECT * FROM sites WHERE site=\"" << site << "\";";
-    auto result = execute(*database, NANODBC_TEXT(command.str()));
+    std::string command = fmt::format("SELECT * FROM sites WHERE site=\"{}\";", site);
+    auto result = execute(*database, NANODBC_TEXT(command));
     return result.next();
 }

@@ -16,3 +16,6 @@
 [submodule "third_party/mINI"]
 	path = third_party/mINI
 	url = https://github.com/pulzed/mINI.git
+[submodule "third_party/fmt"]
+	path = third_party/fmt
+	url = https://github.com/fmtlib/fmt.git
