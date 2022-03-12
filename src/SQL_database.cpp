@@ -67,3 +67,24 @@ bool SQL_database::contains(std::string& site) {
     auto result = execute(*database, NANODBC_TEXT(command));
     return result.next();
 }
+
+void SQL_database::insert(std::string& site, std::string& word) {
+    std::string command = fmt::format("INSERT INTO words(word, quality, site_id) value (\"{}\", 1, (SELECT id FROM sites WHERE site=\"{}\"));", word, site);
+    execute(*database, NANODBC_TEXT(command));
+}
+
+bool SQL_database::contains(std::string& site, std::string& word) {
+    std::string command = fmt::format("SELECT * FROM words WHERE word=\"{}\" AND site_id=(SELECT id FROM sites WHERE site=\"{}\");", word, site);
+    auto result = execute(*database, NANODBC_TEXT(command));
+    return result.next();
+}
+
+void SQL_database::update(std::string& site, std::string& word) {
+    std::string command = fmt::format("UPDATE words SET quality=quality + 1 WHERE word=\"{}\" AND site_id=(SELECT id FROM sites WHERE site=\"{}\");", word, site);
+    execute(*database, NANODBC_TEXT(command));
+}
+
+void SQL_database::update(std::string& site) {
+    std::string command = fmt::format("UPDATE sites SET is_indexed=true WHERE site=\"{}\"", site);
+    execute(*database, NANODBC_TEXT(command));
+}

@@ -13,6 +13,7 @@ public:
     HttpTool(std::string link);
     bool is_ownLink(std::string& link);
     std::string getDomain();
+    std::string getPath(std::string link);
 };
 
 #endif //SEARCHENGINE_HTTPTOOL_H

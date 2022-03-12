@@ -15,9 +15,19 @@ void SearchEngine::indexing(std::string current_link){
         }
     });
 
-    html_parse.get_text([this](std::string out){
-        if(!std::regex_match(out, not_word)) words.insert(stemming.word_stemming(out));
+    std::string patch =  domain->getPath(current_link);
+    html_parse.get_text([this, &patch](std::string out){
+        if(!std::regex_match(out, not_word)) {
+            std::string stemming_out = stemming.word_stemming(out);
+            if(database.contains(patch, stemming_out)){
+                database.update(patch, stemming_out);
+            } else{
+                database.insert(patch, stemming_out);
+            }
+            words.insert(stemming_out);
+        }
     });
+    database.update(patch);
 }
 
 void SearchEngine::startIndexing() {

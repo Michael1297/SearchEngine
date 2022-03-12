@@ -28,12 +28,18 @@ HttpTool::HttpTool(std::string link){
     own_link_regex = std::regex("(^https?://|^)(www\\.|)" + link + "(/\\S*$|$)", icase);
 }
 
+std::string HttpTool::getPath(std::string link) {
+    link.erase(link.begin(), link.begin() + link.find(domain) + domain.size());
+    if(link.empty()) link = "/";
+    return link;
+}
+
 //проверка - ссылка принадлежит домену
 bool HttpTool::is_ownLink(std::string& link) {
     if(std::regex_match(link, own_link_regex)){
+        link = this->getPath(link);
         return true;
     } else if(link.front() == '/'){     //ссылка без домена, начинающиеся с /
-        link = "http://" + domain + link;
         return true;
     } else{
         return false;
