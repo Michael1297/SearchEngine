@@ -22,4 +22,10 @@ class InvalidLinkException: public std::exception{
     }
 };
 
+class ConnectDatabaseException: public std::exception{
+    const char* what() const noexcept override{
+        return "Failed to connect to database";
+    }
+};
+
 #endif //SEARCHENGINE_EXCEPTION_H

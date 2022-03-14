@@ -2,43 +2,55 @@
 #include <iostream>
 #include <thread>
 #include <vector>
+#include <map>
 #include <cpr/cpr.h>
 #include "GumboAPI.h"
 
 void SearchEngine::indexing(std::string current_link){
     cpr::Response r = cpr::Get(cpr::Url(current_link));
+    if(r.status_code == 404 || r.status_code == 500){
+        database.insert_page(domain->getPath(current_link), r.status_code, "");
+        return;
+    }
+    std::string content = r.text;
+    HttpTool::escape(content, '"');     //экранировать скобки чтобы избежать проблемы при добавлении в бд
+    auto path = domain->getPath(current_link);
+    database.insert_page(path, r.status_code, content);     //добавить страницу в бд
+    buffer_sites.erase(current_link);           //удалить страницу из буфера
+    auto page_id = database.page_id(path);  //сохранить id добавленной страницы
+
     GumboAPI html_parse(r.text);
-    html_parse.get_links([this](std::string links){
-        if(domain->is_ownLink(links)) {
-            if(!database.contains(links)) database.insert(links);
-            std::cout << links << "\n";
+    html_parse.get_links([this](std::string links){     //получить ссылки со страницы
+        if(domain->is_ownLink(links)) {     //игнорировать ссылки сторонних сайтов
+            //if(database.page_id(domain->getPath(links)) > 0) buffer_sites.insert(links);    //добавить полученную ссылку в буфер
         }
     });
 
-    std::string patch =  domain->getPath(current_link);
-    html_parse.get_text([this, &patch](std::string out){
-        if(!std::regex_match(out, not_word)) {
-            std::string stemming_out = stemming.word_stemming(out);
-            if(database.contains(patch, stemming_out)){
-                database.update(patch, stemming_out);
-            } else{
-                database.insert(patch, stemming_out);
-            }
-            words.insert(stemming_out);
-        }
+    std::map<std::string, int> buffer_words;
+    html_parse.get_text([this, &buffer_words](std::string out){
+        buffer_words[stemming.word_stemming(out)]++;
     });
-    database.update(patch);
+    for(auto& word : buffer_words){
+        if(auto word_id = database.word_id(word.first); word_id > 0){
+            database.update_word(word.first);
+            database.insert_search_index(page_id, word_id, word.second);
+        } else{
+            database.insert_word(word.first);
+            database.insert_search_index(page_id, database.word_id(word.first), word.second);
+        }
+    }
 }
 
 void SearchEngine::startIndexing() {
     database.create();
-    std::unordered_set<std::string> links;      //TODO удалить
-    std::vector<std::thread> threads;
-    indexing(domain->getDomain());
-    for(auto& word : words) std::cout << word << "\n";
-    std::cout << "words.size() " << words.size() << "\n";
+    while (!buffer_sites.empty()){
+        std::vector<std::thread> threads;
+        for(auto current_link : buffer_sites) threads.emplace_back(&SearchEngine::indexing, this, current_link);
+        for(auto& thread : threads) thread.join();
+    }
 }
 
 SearchEngine::SearchEngine(const std::string& link) {
     domain = std::make_unique<HttpTool>(link);
+    buffer_sites.insert(link);
 }

@@ -13,12 +13,12 @@ public:
     void create();  //создать бд
     void drop();    //удалить бд
     void use();     //использовать созданную бд
-    void insert(std::string& site);  //добавить сайт в бд
-    void insert(std::string& site, std::string& word);  //добавить слово в бд
-    bool contains(std::string& site);   //находится ли сайт в бд
-    bool contains(std::string& site, std::string& word);   //находится ли сайт в бд
-    void update(std::string& site);   //установить is_indexed true
-    void update(std::string& site, std::string& word);  //увеличить quality word на 1
+    void insert_page(std::string site, int code, std::string content);  //добавить сайт в бд
+    void insert_word(std::string value);    //добавить слово в бд
+    void insert_search_index(int page_id, int word_id, float rank);
+    int page_id(std::string path);          //id страницы
+    int word_id(std::string value);         //id слова
+    void update_word(std::string value);    //увеличить frequency на 1
 };
 
 #endif //SEARCHENGINE_SQL_DATABASE_H

@@ -22,24 +22,28 @@ HttpTool::HttpTool(std::string link){
     if(link.empty()) throw InvalidLinkException();
 
     domain = link;
-    for(int i = 1; i < link.size() - 1; i++){
-        if(link[i] == '.') link.insert(link.begin() + i++, '\\');       //экранирование '.' в link для применения в regex
-    }
+    HttpTool::escape(link, '.');    //экранирование '.' в link для применения в regex
     own_link_regex = std::regex("(^https?://|^)(www\\.|)" + link + "(/\\S*$|$)", icase);
 }
 
 std::string HttpTool::getPath(std::string link) {
-    link.erase(link.begin(), link.begin() + link.find(domain) + domain.size());
+    if(link.front() != '/') link.erase(link.begin(), link.begin() + link.find(domain) + domain.size());
     if(link.empty()) link = "/";
     return link;
+}
+
+void HttpTool::escape(std::string& text, char symbol) { //экранирование
+    for(int i = 0; i < text.size(); i++){
+        if(text[i] == symbol) text.insert(text.begin() + i++, '\\');       //экранирование symbol в text
+    }
 }
 
 //проверка - ссылка принадлежит домену
 bool HttpTool::is_ownLink(std::string& link) {
     if(std::regex_match(link, own_link_regex)){
-        link = this->getPath(link);
         return true;
     } else if(link.front() == '/'){     //ссылка без домена, начинающиеся с /
+        link = "https://" + domain + link;
         return true;
     } else{
         return false;

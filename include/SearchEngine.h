@@ -12,8 +12,7 @@
 
 class SearchEngine{
     std::unique_ptr<HttpTool> domain;
-    std::regex not_word = std::regex("^\\W+$|^\\d+$");  //рандомные символы вместо слова
-    std::unordered_set<std::string> words;      //Todo добавлено временно
+    std::unordered_set<std::string> buffer_sites;           //сайты на индексацию
     Stemming stemming;                                      //стемминг слова
     SQL_database database;                                  //база данных
     void indexing(std::string current_link);

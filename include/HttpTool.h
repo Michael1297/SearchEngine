@@ -14,6 +14,7 @@ public:
     bool is_ownLink(std::string& link);
     std::string getDomain();
     std::string getPath(std::string link);
+    static void escape(std::string& text, char symbol);      //экранирование символов .
 };
 
 #endif //SEARCHENGINE_HTTPTOOL_H

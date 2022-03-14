@@ -1,6 +1,7 @@
 #include "SQL_database.h"
 #include <fmt/core.h>
 #include "Config.h"
+#include "Exception.h"
 #include <iostream> //TODO удалить
 
 SQL_database::SQL_database() {
@@ -8,41 +9,47 @@ SQL_database::SQL_database() {
     database_name = config.database;
 
     //строка подключения к бд
-    //  https://docs.microsoft.com/en-us/sql/integration-services/import-export-data/connect-to-a-mysql-data-source-sql-server-import-and-export-wizard?view=sql-server-2017
     //  Driver={MySQL ODBC 8.0 ANSI Driver};Server=<server>;Database=<database>;UID=<user id>;PWD=<password>
     std::string connection_string = fmt::format("Driver={};Server={};Port={};UID={};PWD={};",
                                                 config.driver, config.server, config.port, config.login, config.password);
-
     try{
         database = std::make_unique<nanodbc::connection>(NANODBC_TEXT(connection_string));
-        std::cout << database->dbms_name() << "\n";//TODO удалить
     }
-    catch (std::runtime_error const& e){
-        std::cerr << e.what() << std::endl;//TODO удалить
+    catch (...){
+        throw ConnectDatabaseException();   //не удалось подключиться к бд
     }
+    this->use();    //использовать бд
 }
 
-void SQL_database::create() {
+void SQL_database::create() {   //"FOREIGN KEY (site_id) references sites(id) "
     this->drop();
 
     std::string command = fmt::format("CREATE DATABASE {};", database_name);
     execute(*database, NANODBC_TEXT(command));
 
-    this->use();
+    this->use();    //использовать бд
 
-    command = "CREATE TABLE sites("
+    command = "CREATE TABLE page("
               "id INT AUTO_INCREMENT PRIMARY KEY, "
-              "site TEXT NOT NULL, "
-              "is_indexed BOOLEAN NOT NULL DEFAULT false"
+              "path TEXT NOT NULL, "        //адрес страницы от корня сайта
+              "code INT NOT NULL, "         //код ответа, полученный при запросе страницы
+              "content TEXT NOT NULL"       //контент страницы (HTML-код)
               ");";
     execute(*database, NANODBC_TEXT(command));
 
-    command = "CREATE TABLE words("
+    command = "CREATE TABLE word("
               "id INT AUTO_INCREMENT PRIMARY KEY, "
-              "word TEXT NOT NULL, "
-              "quality INT NOT NULL DEFAULT 0, "
-              "site_id INT NOT NULL, "
-              "FOREIGN KEY (site_id) references sites(id) "
+              //"site_id INT NOT NULL, "    //идентификатор сайта (что это?)
+              "value TEXT NOT NULL, "       //нормальная форма слова
+              "frequency INT NOT NULL"      //количество страниц, на которых слово встречается хотя бы один раз
+              ");";
+    execute(*database, NANODBC_TEXT(command));
+
+    command = "CREATE TABLE search_index("
+              "id INT AUTO_INCREMENT PRIMARY KEY, "
+              "page_id INT NOT NULL, "      //идентификатор страницы.
+              "word_id INT NOT NULL, "      //идентификатор слова
+              "rnk FLOAT NOT NULL"          //ранг слова в данном поле этой страницы
               ");";
     execute(*database, NANODBC_TEXT(command));
 }
@@ -54,37 +61,58 @@ void SQL_database::drop() {
 
 void SQL_database::use() {
     std::string command = fmt::format("USE {};", database_name);
+    try{
+        execute(*database, NANODBC_TEXT(command));  //использовать бд
+    }
+    catch (...){    //не удалось использовать бд
+        this->create();    //создать новую бд
+    }
+
+}
+
+void SQL_database::insert_page(std::string path, int code, std::string content) {       //TODO разобраться с экранированием content
+    //std::cout << content << "\n";
+    std::string command = fmt::format(R"(INSERT INTO page(path, code, content) VALUES("{}", {}, "");)", path, code);
+    //std::string command = fmt::format(R"(INSERT INTO page(path, code, content) VALUES("{}", {}, "{}");)", path, code, content);
+    std::cout << command << "\n";
     execute(*database, NANODBC_TEXT(command));
 }
 
-void SQL_database::insert(std::string& site) {
-    std::string command = fmt::format("INSERT INTO sites (site) value (\"{}\");", site);
-    execute(*database, NANODBC_TEXT(command));
-}
-
-bool SQL_database::contains(std::string& site) {
-    std::string command = fmt::format("SELECT * FROM sites WHERE site=\"{}\";", site);
+int SQL_database::page_id(std::string path) {
+    std::string command = fmt::format(R"(SELECT * FROM page WHERE path="{}";)", path);
     auto result = execute(*database, NANODBC_TEXT(command));
-    return result.next();
+    result.next();      //без этой функции всегда происходит catch
+    try{
+        return result.get<int>("id");
+    }
+    catch (...) {
+        return 0;
+    }
 }
 
-void SQL_database::insert(std::string& site, std::string& word) {
-    std::string command = fmt::format("INSERT INTO words(word, quality, site_id) value (\"{}\", 1, (SELECT id FROM sites WHERE site=\"{}\"));", word, site);
+void SQL_database::insert_word(std::string value) {
+    std::string command = fmt::format(R"(INSERT INTO word(value, frequency) VALUES ("{}", 1);)", value);
     execute(*database, NANODBC_TEXT(command));
 }
 
-bool SQL_database::contains(std::string& site, std::string& word) {
-    std::string command = fmt::format("SELECT * FROM words WHERE word=\"{}\" AND site_id=(SELECT id FROM sites WHERE site=\"{}\");", word, site);
+int SQL_database::word_id(std::string value) {
+    std::string command = fmt::format(R"(SELECT * FROM word WHERE value="{}";)", value);
     auto result = execute(*database, NANODBC_TEXT(command));
-    return result.next();
+    result.next();      //без этой функции всегда происходит catch
+    try{
+        return result.get<int>("id");
+    }
+    catch (...) {
+        return 0;
+    }
 }
 
-void SQL_database::update(std::string& site, std::string& word) {
-    std::string command = fmt::format("UPDATE words SET quality=quality + 1 WHERE word=\"{}\" AND site_id=(SELECT id FROM sites WHERE site=\"{}\");", word, site);
+void SQL_database::update_word(std::string value) {
+    std::string command = fmt::format(R"(UPDATE word SET frequency=frequency+1 WHERE value="{}";)", value);
     execute(*database, NANODBC_TEXT(command));
 }
 
-void SQL_database::update(std::string& site) {
-    std::string command = fmt::format("UPDATE sites SET is_indexed=true WHERE site=\"{}\"", site);
+void SQL_database::insert_search_index(int page_id, int word_id, float rank) {
+    std::string command = fmt::format(R"(INSERT INTO search_index(page_id, word_id, rnk) VALUES ({}, {}, {});)", page_id, word_id, rank);
     execute(*database, NANODBC_TEXT(command));
 }
