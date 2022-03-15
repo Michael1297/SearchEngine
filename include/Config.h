@@ -23,22 +23,22 @@ Config::Config() {
     mINI::INIStructure config;
     if(!config_file.read(config)) throw MissingConfigFileException();
 
-    driver = config["DEFAULT"]["driver"];
+    driver = config["Config"]["driver"];
     if(driver.empty()) throw InvalidConfigFileException();
 
-    server = config["DEFAULT"]["server"];
+    server = config["Config"]["server"];
     if(server.empty()) throw InvalidConfigFileException();
 
-    port = config["DEFAULT"]["port"];
+    port = config["Config"]["port"];
     if(port.empty()) throw InvalidConfigFileException();
 
-    database = config["DEFAULT"]["database"];
+    database = config["Config"]["database"];
     if(database.empty()) throw InvalidConfigFileException();
 
-    login = config["DEFAULT"]["login"];
+    login = config["Config"]["login"];
     if(login.empty()) throw InvalidConfigFileException();
 
-    password = config["DEFAULT"]["password"];
+    password = config["Config"]["password"];
     if(password.empty()) throw InvalidConfigFileException();
 }
 

@@ -13,7 +13,7 @@ public:
     void create();  //создать бд
     void drop();    //удалить бд
     void use();     //использовать созданную бд
-    void insert_page(std::string site, int code, std::string content);  //добавить сайт в бд
+    void insert_page(std::string path, int code, std::string content);  //добавить сайт в бд
     void insert_word(std::string value);    //добавить слово в бд
     void insert_search_index(int page_id, int word_id, float rank);
     int page_id(std::string path);          //id страницы

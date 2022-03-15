@@ -33,7 +33,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE nlohmann_json::nlohmann_json)
 target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} PRIVATE third_party_library)
 target_link_libraries(${PROJECT_NAME} PRIVATE oleanderstemminglibrary)
-target_link_libraries(${PROJECT_NAME} PRIVATE nanodbc)
+target_link_libraries(${PROJECT_NAME} PRIVATE nanodbc "${ODBC_LINK_FLAGS}")
 target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt)
 
 #копирование файла

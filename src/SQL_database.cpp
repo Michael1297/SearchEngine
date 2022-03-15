@@ -1,5 +1,6 @@
 #include "SQL_database.h"
 #include <fmt/core.h>
+#include <base64/include/base64.hpp>
 #include "Config.h"
 #include "Exception.h"
 #include <iostream> //TODO удалить
@@ -33,7 +34,7 @@ void SQL_database::create() {   //"FOREIGN KEY (site_id) references sites(id) "
               "id INT AUTO_INCREMENT PRIMARY KEY, "
               "path TEXT NOT NULL, "        //адрес страницы от корня сайта
               "code INT NOT NULL, "         //код ответа, полученный при запросе страницы
-              "content TEXT NOT NULL"       //контент страницы (HTML-код)
+              "content MEDIUMTEXT NOT NULL" //контент страницы (HTML-код)   (MEDIUMTEXT - в TEXT все не помещается)
               ");";
     execute(*database, NANODBC_TEXT(command));
 
@@ -71,10 +72,8 @@ void SQL_database::use() {
 }
 
 void SQL_database::insert_page(std::string path, int code, std::string content) {       //TODO разобраться с экранированием content
-    //std::cout << content << "\n";
-    std::string command = fmt::format(R"(INSERT INTO page(path, code, content) VALUES("{}", {}, "");)", path, code);
-    //std::string command = fmt::format(R"(INSERT INTO page(path, code, content) VALUES("{}", {}, "{}");)", path, code, content);
-    std::cout << command << "\n";
+    //base64 требуется из-за проблем при добавлении кода страницы
+    std::string command = fmt::format(R"(INSERT INTO page(path, code, content) VALUES("{}", {}, "{}");)", path, code, base64::to_base64(content));
     execute(*database, NANODBC_TEXT(command));
 }
 

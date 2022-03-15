@@ -19,3 +19,7 @@
 [submodule "third_party/fmt"]
 	path = third_party/fmt
 	url = https://github.com/fmtlib/fmt.git
+[submodule "third_party/base64"]
+	path = third_party/base64
+	url = https://github.com/tobiaslocker/base64.git
+
