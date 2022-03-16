@@ -12,8 +12,7 @@
 #include "SQL_database.h"
 
 class SearchEngine{
-    std::mutex sql_mutex;
-    std::mutex buffer_sites_mutex;
+    std::mutex mutex;
     std::unique_ptr<HttpTool> domain;
     std::unordered_set<std::string> buffer_sites;           //сайты на индексацию
     Stemming stemming;                                      //стемминг слова
