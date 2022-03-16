@@ -71,7 +71,7 @@ void SQL_database::use() {
 
 }
 
-void SQL_database::insert_page(std::string path, int code, std::string content) {       //TODO разобраться с экранированием content
+void SQL_database::insert_page(std::string path, int code, std::string content) {
     //base64 требуется из-за проблем при добавлении кода страницы
     std::string command = fmt::format(R"(INSERT INTO page(path, code, content) VALUES("{}", {}, "{}");)", path, code, base64::to_base64(content));
     execute(*database, NANODBC_TEXT(command));
@@ -114,4 +114,16 @@ void SQL_database::update_word(std::string value) {
 void SQL_database::insert_search_index(int page_id, int word_id, float rank) {
     std::string command = fmt::format(R"(INSERT INTO search_index(page_id, word_id, rnk) VALUES ({}, {}, {});)", page_id, word_id, rank);
     execute(*database, NANODBC_TEXT(command));
+}
+
+int SQL_database::size(std::string table) {
+    std::string command = fmt::format("SELECT id FROM {} ORDER BY id DESC LIMIT 1;", table);
+    auto result = execute(*database, NANODBC_TEXT(command));
+    result.next();      //без этой функции всегда происходит catch
+    try{
+        return result.get<int>("id");
+    }
+    catch (...) {
+        return 0;
+    }
 }

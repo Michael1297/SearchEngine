@@ -3,6 +3,7 @@
 
 #pragma once
 #include <memory>
+#include <string>
 #include <nanodbc/nanodbc.h>
 
 class SQL_database{
@@ -19,6 +20,7 @@ public:
     int page_id(std::string path);          //id страницы
     int word_id(std::string value);         //id слова
     void update_word(std::string value);    //увеличить frequency на 1
+    int size(std::string table);            //размер таблицы
 };
 
 #endif //SEARCHENGINE_SQL_DATABASE_H

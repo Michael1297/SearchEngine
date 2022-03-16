@@ -9,19 +9,58 @@
 void SearchEngine::indexing(std::string current_link){
     cpr::Response r = cpr::Get(cpr::Url(current_link));
     if(r.status_code == 404 || r.status_code == 500){
-        database.insert_page(domain->getPath(current_link), r.status_code, "");
+        try{
+            sql_mutex.lock();
+            database.insert_page(domain->getPath(current_link), r.status_code, "");
+            sql_mutex.unlock();
+        }
+        catch (...){
+            if(!sql_mutex.try_lock()) sql_mutex.unlock();
+            //TODO когда будут добавлены логи помепить в них скип проблематичного сайта при добавлении в бд
+        }
+        buffer_sites_mutex.lock();
+        buffer_sites.erase(current_link);           //удалить страницу из буфера
+        buffer_sites_mutex.unlock();
         return;
     }
-    std::string content = r.text;
+
     auto path = domain->getPath(current_link);
-    database.insert_page(path, r.status_code, content);     //добавить страницу в бд
-    buffer_sites.erase(current_link);           //удалить страницу из буфера
+    try{
+        sql_mutex.lock();
+        database.insert_page(path, r.status_code, r.text);     //добавить страницу в бд
+        sql_mutex.unlock();
+        buffer_sites_mutex.lock();
+        buffer_sites.erase(current_link);           //удалить страницу из буфера
+        buffer_sites_mutex.unlock();
+    }
+    catch (...){
+        if(!sql_mutex.try_lock()) sql_mutex.unlock();
+        //TODO когда будут добавлены логи помепить в них скип проблематичного сайта при добавлении в бд
+        buffer_sites_mutex.lock();
+        buffer_sites.erase(current_link);           //удалить страницу из буфера
+        buffer_sites_mutex.unlock();
+        return;
+    }
+
+    sql_mutex.lock();
     auto page_id = database.page_id(path);  //сохранить id добавленной страницы
+    sql_mutex.unlock();
 
     GumboAPI html_parse(r.text);
     html_parse.get_links([this](std::string links){     //получить ссылки со страницы
         if(domain->is_ownLink(links)) {     //игнорировать ссылки сторонних сайтов
-            //if(database.page_id(domain->getPath(links)) == 0) buffer_sites.insert(links);    //TODO  добавить полученную ссылку в буфер
+            try{
+                sql_mutex.lock();
+                buffer_sites_mutex.lock();
+                //if(database.page_id(domain->getPath(links)) == 0) buffer_sites.insert(links);    //TODO  добавить полученную ссылку в буфер
+                buffer_sites_mutex.unlock();
+                sql_mutex.unlock();
+            }
+            catch (...){
+                if(!buffer_sites_mutex.try_lock()) buffer_sites_mutex.unlock();
+                if(!sql_mutex.try_lock()) sql_mutex.unlock();
+                //TODO когда будут добавлены логи помепить в них скип проблематичного сайта
+            }
         }
     });
 
@@ -32,12 +71,20 @@ void SearchEngine::indexing(std::string current_link){
 
     //добавление слов в бд
     for(auto& word : buffer_words){
-        if(auto word_id = database.word_id(word.first); word_id > 0){   //слово присутствует в бд
-            database.update_word(word.first);   //увеличить frequency на 1 в бд
-            database.insert_search_index(page_id, word_id, word.second);
-        } else{
-            database.insert_word(word.first);   //добавить слово в бд
-            database.insert_search_index(page_id, database.word_id(word.first), word.second);
+        try{
+            sql_mutex.lock();
+            if(auto word_id = database.word_id(word.first); word_id > 0){   //слово присутствует в бд
+                database.update_word(word.first);   //увеличить frequency на 1 в бд
+                database.insert_search_index(page_id, word_id, word.second);
+            } else{
+                database.insert_word(word.first);   //добавить слово в бд
+                database.insert_search_index(page_id, database.word_id(word.first), word.second);
+            }
+            sql_mutex.unlock();
+        }
+        catch (...){
+            if(!sql_mutex.try_lock()) sql_mutex.unlock();
+            //TODO когда будут добавлены логи помепить в них скип проблематичного слова
         }
     }
 }
