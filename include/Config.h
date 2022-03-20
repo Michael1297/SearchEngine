@@ -21,25 +21,25 @@ public:
 Config::Config() {
     mINI::INIFile config_file("config.ini");
     mINI::INIStructure config;
-    if(!config_file.read(config)) throw MissingConfigFileException();
+    if(!config_file.read(config)) throw Exception("Missing config file");
 
     driver = config["Config"]["driver"];
-    if(driver.empty()) throw InvalidConfigFileException();
+    if(driver.empty()) throw Exception("Invalid config file");
 
     server = config["Config"]["server"];
-    if(server.empty()) throw InvalidConfigFileException();
+    if(server.empty()) throw Exception("Invalid config file");
 
     port = config["Config"]["port"];
-    if(port.empty()) throw InvalidConfigFileException();
+    if(port.empty()) throw Exception("Invalid config file");
 
     database = config["Config"]["database"];
-    if(database.empty()) throw InvalidConfigFileException();
+    if(database.empty()) throw Exception("Invalid config file");
 
     login = config["Config"]["login"];
-    if(login.empty()) throw InvalidConfigFileException();
+    if(login.empty()) throw Exception("Invalid config file");
 
     password = config["Config"]["password"];
-    if(password.empty()) throw InvalidConfigFileException();
+    if(password.empty()) throw Exception("Invalid config file");
 }
 
 #endif //SEARCHENGINE_CONFIG_H

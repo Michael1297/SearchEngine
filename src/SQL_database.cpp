@@ -3,7 +3,6 @@
 #include <base64/include/base64.hpp>
 #include "Config.h"
 #include "Exception.h"
-#include <iostream> //TODO удалить
 
 SQL_database::SQL_database() {
     Config config;      //данные из config.ini файла
@@ -17,7 +16,7 @@ SQL_database::SQL_database() {
         database = std::make_unique<nanodbc::connection>(NANODBC_TEXT(connection_string));
     }
     catch (...){
-        throw ConnectDatabaseException();   //не удалось подключиться к бд
+        throw Exception("Failed to connect to database");   //не удалось подключиться к бд
     }
     this->use();    //использовать бд
 }

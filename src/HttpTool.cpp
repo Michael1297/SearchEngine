@@ -8,18 +8,18 @@ HttpTool::HttpTool(std::string link){
     if(std::regex_match(link, has_http)){       //убирает http://
         link.erase(link.begin(), link.begin() + link.find("//") + 2);
     }
-    if(link.empty()) throw InvalidLinkException();
+    if(link.empty()) throw Exception("Invalid link");
 
     std::regex has_www("^www\\.\\S+");
     if(std::regex_match(link, has_www)){       //убирает www.
         link.erase(link.begin(), link.begin() + 4);
     }
-    if(link.empty()) throw InvalidLinkException();
+    if(link.empty()) throw Exception("Invalid link");
 
     if(auto find = link.find('/'); find != std::string::npos){
         link.resize(find);       //убирает буквы после /
     }
-    if(link.empty()) throw InvalidLinkException();
+    if(link.empty()) throw Exception("Invalid link");
 
     domain = link;
     HttpTool::escape(link, '.');    //экранирование '.' в link для применения в regex

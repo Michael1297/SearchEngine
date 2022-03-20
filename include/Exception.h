@@ -3,29 +3,16 @@
 
 #pragma once
 #include <exception>
+#include <string>
 
-class InvalidConfigFileException: public std::exception{
+class Exception: public std::exception{
+    std::string message;
+
     const char* what() const noexcept override{
-        return "Invalid config file";
+        return message.c_str();
     }
-};
 
-class MissingConfigFileException: public std::exception{
-    const char* what() const noexcept override{
-        return "Missing config file";
-    }
+public:
+    Exception(std::string text): message(text){}
 };
-
-class InvalidLinkException: public std::exception{
-    const char* what() const noexcept override{
-        return "Invalid link";
-    }
-};
-
-class ConnectDatabaseException: public std::exception{
-    const char* what() const noexcept override{
-        return "Failed to connect to database";
-    }
-};
-
 #endif //SEARCHENGINE_EXCEPTION_H
