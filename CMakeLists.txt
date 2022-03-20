@@ -25,6 +25,7 @@ add_subdirectory(third_party)                           #gumbo-parser + ini pars
 add_subdirectory(third_party/OleanderStemmingLibrary)   #стимминг слов
 add_subdirectory(third_party/nanodbc)                   #управление SQL бд
 add_subdirectory(third_party/fmt)                       #Форматирование строк
+add_subdirectory(third_party/oatpp)                     #сервер
 
 add_subdirectory(src)
 
@@ -35,6 +36,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE third_party_library)
 target_link_libraries(${PROJECT_NAME} PRIVATE oleanderstemminglibrary)
 target_link_libraries(${PROJECT_NAME} PRIVATE nanodbc "${ODBC_LINK_FLAGS}")
 target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt)
+target_link_libraries(${PROJECT_NAME} PRIVATE oatpp)
 
 #копирование файла
 configure_file(config.ini ${CMAKE_CURRENT_BINARY_DIR}/config.ini COPYONLY)

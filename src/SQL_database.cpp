@@ -78,13 +78,11 @@ void SQL_database::insert_page(std::string path, int code, std::string content) 
 }
 
 int SQL_database::page_id(std::string path) {
-    std::string command = fmt::format(R"(SELECT * FROM page WHERE path="{}";)", path);
+    std::string command = fmt::format(R"(SELECT id FROM page WHERE path="{}";)", path);
     auto result = execute(*database, NANODBC_TEXT(command));
-    result.next();      //без этой функции всегда происходит catch
-    try{
+    if(result.next()) {
         return result.get<int>("id");
-    }
-    catch (...) {
+    } else {
         return 0;
     }
 }
@@ -95,13 +93,11 @@ void SQL_database::insert_word(std::string value) {
 }
 
 int SQL_database::word_id(std::string value) {
-    std::string command = fmt::format(R"(SELECT * FROM word WHERE value="{}";)", value);
+    std::string command = fmt::format(R"(SELECT id FROM word WHERE value="{}";)", value);
     auto result = execute(*database, NANODBC_TEXT(command));
-    result.next();      //без этой функции всегда происходит catch
-    try{
+    if(result.next()) {
         return result.get<int>("id");
-    }
-    catch (...) {
+    } else {
         return 0;
     }
 }
@@ -120,10 +116,9 @@ int SQL_database::size(std::string table) {
     std::string command = fmt::format("SELECT id FROM {} ORDER BY id DESC LIMIT 1;", table);
     auto result = execute(*database, NANODBC_TEXT(command));
     result.next();      //без этой функции всегда происходит catch
-    try{
+    if(result.next()) {
         return result.get<int>("id");
-    }
-    catch (...) {
+    } else {
         return 0;
     }
 }

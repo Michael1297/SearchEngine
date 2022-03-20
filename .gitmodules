@@ -22,4 +22,6 @@
 [submodule "third_party/base64"]
 	path = third_party/base64
 	url = https://github.com/tobiaslocker/base64.git
-
+[submodule "third_party/oatpp"]
+	path = third_party/oatpp
+	url = https://github.com/oatpp/oatpp.git

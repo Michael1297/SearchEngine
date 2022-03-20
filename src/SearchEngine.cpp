@@ -14,7 +14,7 @@ void SearchEngine::indexing(std::string current_link){
             database.insert_page(domain->getPath(current_link), r.status_code, "");
         }
         catch (...){
-            //TODO когда будут добавлены логи помепить в них скип проблематичного сайта при добавлении в бд
+            //TODO когда будут добавлены логи пометить в них скип проблематичного сайта при добавлении в бд
         }
         buffer_sites.erase(current_link);           //удалить страницу из буфера
         mutex.unlock();
@@ -28,7 +28,7 @@ void SearchEngine::indexing(std::string current_link){
         buffer_sites.erase(current_link);           //удалить страницу из буфера
     }
     catch (...){
-        //TODO когда будут добавлены логи помепить в них скип проблематичного сайта при добавлении в бд
+        //TODO когда будут добавлены логи пометить в них скип проблематичного сайта при добавлении в бд
         buffer_sites.erase(current_link);           //удалить страницу из буфера
         mutex.unlock();
         return;
@@ -44,7 +44,7 @@ void SearchEngine::indexing(std::string current_link){
                 //if(database.page_id(domain->getPath(links)) == 0) buffer_sites.insert(links);    //TODO  добавить полученную ссылку в буфер
             }
             catch (...){
-                //TODO когда будут добавлены логи помепить в них скип проблематичного сайта
+                //TODO когда будут добавлены логи пометить в них скип проблематичного сайта
             }
             mutex.unlock();
         }
@@ -69,7 +69,7 @@ void SearchEngine::indexing(std::string current_link){
             }
         }
         catch (...){
-            //TODO когда будут добавлены логи помепить в них скип проблематичного слова
+            //TODO когда будут добавлены логи пометить в них скип проблематичного слова
         }
         mutex.unlock();
     }
