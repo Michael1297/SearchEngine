@@ -41,7 +41,7 @@ void SearchEngine::indexing(std::string current_link){
         if(domain->is_ownLink(links)) {     //игнорировать ссылки сторонних сайтов
             mutex.lock();
             try{
-                //if(database.page_id(domain->getPath(links)) == 0) buffer_sites.insert(links);    //TODO  добавить полученную ссылку в буфер
+                //if(database.page_id(domain->getPath(links)) == 0 && now_indexing) buffer_sites.insert(links);    //TODO  добавить полученную ссылку в буфер
             }
             catch (...){
                 //TODO когда будут добавлены логи пометить в них скип проблематичного сайта
@@ -75,17 +75,46 @@ void SearchEngine::indexing(std::string current_link){
     }
 }
 
-void SearchEngine::startIndexing() {
+nlohmann::json SearchEngine::startIndexing() {
+    nlohmann::json status;
+    if(now_indexing){
+        status["result"] = false;
+        status["error"] = "Индексация уже запущена";
+        return status;
+    }
+    now_indexing = true;
     database->create();
+    buffer_sites.insert(config->start_page);
     while (!buffer_sites.empty()){
         std::vector<std::thread> threads;
         for(auto current_link : buffer_sites) threads.emplace_back(&SearchEngine::indexing, this, current_link);
         for(auto& thread : threads) thread.join();
     }
+    status["result"] = true;
+    now_indexing = false;
+    return status;
 }
 
-SearchEngine::SearchEngine(std::shared_ptr<Config> config) {
-    database = std::make_unique<SQL_database>(config);
-    domain = std::make_unique<HttpTool>(config->start_page);
-    buffer_sites.insert(config->start_page);
+nlohmann::json SearchEngine::stopIndexing() {
+    mutex.lock();
+    now_indexing = false;
+    mutex.unlock();
+    nlohmann::json status;
+    status["result"] = "stop";
+    return status;
+}
+
+nlohmann::json SearchEngine::status() {
+    nlohmann::json status;
+    status["status"] = "OK";
+    status["pages_count"] = database->size("page");
+    status["words_count"] = database->size("search_index");
+    status["index_size"] = database->size("word");
+    return status;
+}
+
+SearchEngine::SearchEngine(std::shared_ptr<Config> _config) {
+    database = std::make_unique<SQL_database>(_config);
+    config = _config;
+    domain = std::make_unique<HttpTool>(_config->start_page);
 }

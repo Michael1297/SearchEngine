@@ -7,7 +7,7 @@
 SQL_database::SQL_database(std::shared_ptr<Config> config) {
     database_name = config->databaseSQL;
 
-    //строка подключения -> бд
+    //строка подключения к бд
     //  Driver={MySQL ODBC 8.0 ANSI Driver};Server=<server>;Database=<database>;UID=<user id>;PWD=<password>
     std::string connection_string = fmt::format("Driver={};Server={};Port={};UID={};PWD={};",
                                                 config->driverSQL, config->serverSQL, config->portSQL, config->loginSQL, config->passwordSQL);
@@ -113,7 +113,6 @@ void SQL_database::insert_search_index(int page_id, int word_id, float rank) {
 int SQL_database::size(std::string table) {
     std::string command = fmt::format("SELECT id FROM {} ORDER BY id DESC LIMIT 1;", table);
     auto result = execute(*database, NANODBC_TEXT(command));
-    result.next();      //без этой функции всегда происходит catch
     if(result.next()) {
         return result.get<int>("id");
     } else {

@@ -2,7 +2,7 @@
 #ifndef MAIN_CPP_SERVER_HPP
 #define MAIN_CPP_SERVER_HPP
 
-#include <iostream>
+#include <iostream> //TODO del
 #include <functional>
 #include "Config.h"
 #include "SearchEngine.h"
@@ -30,20 +30,29 @@ void run_server(std::shared_ptr<Config> config, std::shared_ptr<SearchEngine> se
     auto router = oatpp::web::server::HttpRouter::createShared();
 
     /* Route GET - "/hello" requests to Handler */
-    router->route("GET", "/hello", std::make_shared<Handler>([](){
+    router->route("GET", "/hello", std::make_shared<Handler>([](){  //TODO del
         std::cout << "/hello\n";
         return "/hello";
     }));
 
-    router->route("GET", "/test", std::make_shared<Handler>([](){
+    router->route("GET", "/test", std::make_shared<Handler>([](){   //TODO del
         std::cout << "/test\n";
         return "/test";
     }));
 
     router->route("GET", "/startIndexing", std::make_shared<Handler>([&searchEngine](){
-        searchEngine->startIndexing();
-        std::cout << "/startIndexing\n";
-        return "";
+        std::cout << "/startIndexing\n";    //TODO del
+        return searchEngine->startIndexing().dump(1, '\t');
+    }));
+
+    router->route("GET", "/stopIndexing", std::make_shared<Handler>([&searchEngine](){
+        std::cout << "/stopIndexing\n";    //TODO del
+        return searchEngine->stopIndexing().dump(1, '\t');
+    }));
+
+    router->route("GET", "/status", std::make_shared<Handler>([&searchEngine](){
+        std::cout << "/status\n";   //TODO del
+        return searchEngine->status().dump(1, '\t');
     }));
 
     /* Create HTTP connection handler with router */
@@ -55,7 +64,7 @@ void run_server(std::shared_ptr<Config> config, std::shared_ptr<SearchEngine> se
     /* Create server which takes provided TCP connections and passes them to HTTP connection handler */
     oatpp::network::Server server(connectionProvider, connectionHandler);
 
-    /* Print info about server port */
+    /* Print info about server port */  //TODO del
     OATPP_LOGI("MyApp", "Server running on port %s", connectionProvider->getProperty("port").getData());
 
     /* Run server */
