@@ -22,6 +22,7 @@ class SearchEngine{
     std::unique_ptr<SQL_database> database;                 //база данных
     std::shared_ptr<Config> config;
     void indexing(std::string current_link);
+    void buffer_erase(std::string& current_link);           //удалить страницу из буфера
 public:
 
     SearchEngine(std::shared_ptr<Config> config);                //ввод ссылки + генерация own_link regex для проверки ссылок
