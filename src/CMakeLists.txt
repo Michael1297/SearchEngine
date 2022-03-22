@@ -7,6 +7,7 @@ add_executable(${PROJECT_NAME}
         HttpTool.cpp
         Stemming.cpp
         SQL_database.cpp
+        Config.cpp
         ${INCLUDE_DIR}/SearchEngine.h
         ${INCLUDE_DIR}/GumboAPI.h
         ${INCLUDE_DIR}/Exception.h
@@ -14,6 +15,7 @@ add_executable(${PROJECT_NAME}
         ${INCLUDE_DIR}/Config.h
         ${INCLUDE_DIR}/Stemming.h
         ${INCLUDE_DIR}/SQL_database.h
+        ${INCLUDE_DIR}/Server.hpp
         )
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${INCLUDE_DIR})

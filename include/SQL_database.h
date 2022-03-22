@@ -5,12 +5,13 @@
 #include <memory>
 #include <string>
 #include <nanodbc/nanodbc.h>
+#include "Config.h"
 
 class SQL_database{
     std::string database_name;
     std::unique_ptr<nanodbc::connection> database;
 public:
-    SQL_database();
+    SQL_database(std::shared_ptr<Config> config);
     void create();  //создать бд
     void drop();    //удалить бд
     void use();     //использовать созданную бд

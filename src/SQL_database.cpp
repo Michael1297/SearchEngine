@@ -4,14 +4,13 @@
 #include "Config.h"
 #include "Exception.h"
 
-SQL_database::SQL_database() {
-    Config config;      //данные из config.ini файла
-    database_name = config.database;
+SQL_database::SQL_database(std::shared_ptr<Config> config) {
+    database_name = config->databaseSQL;
 
-    //строка подключения к бд
+    //строка подключения -> бд
     //  Driver={MySQL ODBC 8.0 ANSI Driver};Server=<server>;Database=<database>;UID=<user id>;PWD=<password>
     std::string connection_string = fmt::format("Driver={};Server={};Port={};UID={};PWD={};",
-                                                config.driver, config.server, config.port, config.login, config.password);
+                                                config->driverSQL, config->serverSQL, config->portSQL, config->loginSQL, config->passwordSQL);
     try{
         database = std::make_unique<nanodbc::connection>(NANODBC_TEXT(connection_string));
     }

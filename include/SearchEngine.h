@@ -10,17 +10,18 @@
 #include "HttpTool.h"
 #include "Stemming.h"
 #include "SQL_database.h"
+#include "Config.h"
 
 class SearchEngine{
     std::mutex mutex;
     std::unique_ptr<HttpTool> domain;
     std::unordered_set<std::string> buffer_sites;           //сайты на индексацию
     Stemming stemming;                                      //стемминг слова
-    SQL_database database;                                  //база данных
+    std::unique_ptr<SQL_database> database;                 //база данных
     void indexing(std::string current_link);
 public:
 
-    SearchEngine(const std::string& _link);                //ввод ссылки + генерация own_link regex для проверки ссылок
+    SearchEngine(std::shared_ptr<Config> config);                //ввод ссылки + генерация own_link regex для проверки ссылок
     void startIndexing();
 };
 

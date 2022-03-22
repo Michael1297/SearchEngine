@@ -11,7 +11,7 @@ void SearchEngine::indexing(std::string current_link){
     if(r.status_code == 404 || r.status_code == 500){
         mutex.lock();
         try{
-            database.insert_page(domain->getPath(current_link), r.status_code, "");
+            database->insert_page(domain->getPath(current_link), r.status_code, "");
         }
         catch (...){
             //TODO когда будут добавлены логи пометить в них скип проблематичного сайта при добавлении в бд
@@ -24,7 +24,7 @@ void SearchEngine::indexing(std::string current_link){
     auto path = domain->getPath(current_link);
     mutex.lock();
     try{
-        database.insert_page(path, r.status_code, r.text);     //добавить страницу в бд
+        database->insert_page(path, r.status_code, r.text);     //добавить страницу в бд
         buffer_sites.erase(current_link);           //удалить страницу из буфера
     }
     catch (...){
@@ -33,7 +33,7 @@ void SearchEngine::indexing(std::string current_link){
         mutex.unlock();
         return;
     }
-    auto page_id = database.page_id(path);  //сохранить id добавленной страницы
+    auto page_id = database->page_id(path);  //сохранить id добавленной страницы
     mutex.unlock();
 
     GumboAPI html_parse(r.text);
@@ -60,12 +60,12 @@ void SearchEngine::indexing(std::string current_link){
         mutex.lock();
         try{
 
-            if(auto word_id = database.word_id(word.first); word_id > 0){   //слово присутствует в бд
-                database.update_word(word.first);   //увеличить frequency на 1 в бд
-                database.insert_search_index(page_id, word_id, word.second);
+            if(auto word_id = database->word_id(word.first); word_id > 0){   //слово присутствует в бд
+                database->update_word(word.first);   //увеличить frequency на 1 в бд
+                database->insert_search_index(page_id, word_id, word.second);
             } else{
-                database.insert_word(word.first);   //добавить слово в бд
-                database.insert_search_index(page_id, database.word_id(word.first), word.second);
+                database->insert_word(word.first);   //добавить слово в бд
+                database->insert_search_index(page_id, database->word_id(word.first), word.second);
             }
         }
         catch (...){
@@ -76,7 +76,7 @@ void SearchEngine::indexing(std::string current_link){
 }
 
 void SearchEngine::startIndexing() {
-    database.create();
+    database->create();
     while (!buffer_sites.empty()){
         std::vector<std::thread> threads;
         for(auto current_link : buffer_sites) threads.emplace_back(&SearchEngine::indexing, this, current_link);
@@ -84,7 +84,8 @@ void SearchEngine::startIndexing() {
     }
 }
 
-SearchEngine::SearchEngine(const std::string& link) {
-    domain = std::make_unique<HttpTool>(link);
-    buffer_sites.insert(link);
+SearchEngine::SearchEngine(std::shared_ptr<Config> config) {
+    database = std::make_unique<SQL_database>(config);
+    domain = std::make_unique<HttpTool>(config->start_page);
+    buffer_sites.insert(config->start_page);
 }
