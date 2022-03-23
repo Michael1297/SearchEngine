@@ -29,6 +29,7 @@ public:
     nlohmann::json startIndexing();
     nlohmann::json stopIndexing();
     nlohmann::json status();
+    nlohmann::json search(std::string query, int offset, int limit);
 };
 
 #endif //MAIN_CPP_SEARCHENGINE_H

@@ -45,6 +45,9 @@ bool HttpTool::is_ownLink(std::string& link) {
     } else if(link.front() == '/'){     //ссылка без домена, начинающиеся с /
         link = "https://" + domain + link;
         return true;
+    } else if(!std::regex_match(link, has_domain)){     //ссылка без домена, не начинающиеся с /
+        link = "https://" + domain + "/" + link;
+        return true;
     } else{
         return false;
     }

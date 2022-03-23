@@ -11,15 +11,14 @@
 #include "oatpp/network/tcp/server/ConnectionProvider.hpp"
 
 class Handler : public oatpp::web::server::HttpRequestHandler {
-    std::function<std::string()> function_out;
+    std::function<std::string(const std::shared_ptr<IncomingRequest>& request)> function_out;
 public:
-    Handler(std::function<std::string()> function): function_out(function){}
+    Handler(std::function<std::string(const std::shared_ptr<IncomingRequest>& request)> function): function_out(function){}
     /**
      * Handle incoming request and return outgoing response.
      */
     std::shared_ptr<OutgoingResponse> handle(const std::shared_ptr<IncomingRequest>& request) override {
-        //std::cout << request.get()->getPathTail().getValue("ghg") << "\n";
-        return ResponseFactory::createResponse(Status::CODE_200, function_out());
+        return ResponseFactory::createResponse(Status::CODE_200, function_out(request));
     }
 };
 
@@ -29,31 +28,32 @@ void run_server(std::shared_ptr<Config> config, std::shared_ptr<SearchEngine> se
     /* Create Router for HTTP requests routing */
     auto router = oatpp::web::server::HttpRouter::createShared();
 
-    /* Route GET - "/hello" requests to Handler */
-    router->route("GET", "/hello", std::make_shared<Handler>([](){  //TODO del
-        std::cout << "/hello\n";
-        return "/hello";
-    }));
 
-    router->route("GET", "/test", std::make_shared<Handler>([](){   //TODO del
-        std::cout << "/test\n";
-        return "/test";
-    }));
-
-    router->route("GET", "/startIndexing", std::make_shared<Handler>([&searchEngine](){
-        std::cout << "/startIndexing\n";    //TODO del
+    /** Route GET - "/startIndexing" requests to Handler */
+    router->route("GET", "/startIndexing", std::make_shared<Handler>([&searchEngine](const std::shared_ptr<Handler::IncomingRequest>& request){
         return searchEngine->startIndexing().dump(1, '\t');
     }));
 
-    router->route("GET", "/stopIndexing", std::make_shared<Handler>([&searchEngine](){
-        std::cout << "/stopIndexing\n";    //TODO del
+    /** Route GET - "/stopIndexing" requests to Handler */
+    router->route("GET", "/stopIndexing", std::make_shared<Handler>([&searchEngine](const std::shared_ptr<Handler::IncomingRequest>& request){
         return searchEngine->stopIndexing().dump(1, '\t');
     }));
 
-    router->route("GET", "/status", std::make_shared<Handler>([&searchEngine](){
-        std::cout << "/status\n";   //TODO del
+    /** Route GET - "/status" requests to Handler */
+    router->route("GET", "/status", std::make_shared<Handler>([&searchEngine](const std::shared_ptr<Handler::IncomingRequest>& request){
         return searchEngine->status().dump(1, '\t');
     }));
+
+    /** Route GET - "/search" requests to Handler */
+    router->route("GET", "/search", std::make_shared<Handler>([&searchEngine](const std::shared_ptr<Handler::IncomingRequest>& request){
+        std::string tail = request->getPathTail();      /* get url 'tail' - everything that comes after '*' */
+        auto queryParams = oatpp::network::Url::Parser::parseQueryParams(tail);     /* parse query params from tail */
+        std::string query = queryParams.get("query").getValue("");
+        std::string offset = queryParams.get("offset").getValue("0");
+        std::string limit = queryParams.get("limit").getValue("0");
+        return searchEngine->search(query, std::stoi(offset), std::stoi(limit)).dump(1, '\t');
+    }));
+
 
     /* Create HTTP connection handler with router */
     auto connectionHandler = oatpp::web::server::HttpConnectionHandler::createShared(router);

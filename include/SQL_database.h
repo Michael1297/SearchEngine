@@ -4,7 +4,9 @@
 #pragma once
 #include <memory>
 #include <string>
+#include <unordered_set>
 #include <nanodbc/nanodbc.h>
+#include <nlohmann/json.hpp>
 #include "Config.h"
 
 class SQL_database{
@@ -22,6 +24,7 @@ public:
     int word_id(std::string value);         //id слова
     void update_word(std::string value);    //увеличить frequency на 1
     int size(std::string table);            //размер таблицы
+    nlohmann::json search(std::unordered_set<std::string>& worlds);
 };
 
 #endif //SEARCHENGINE_SQL_DATABASE_H

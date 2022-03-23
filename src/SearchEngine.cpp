@@ -25,9 +25,11 @@ void SearchEngine::indexing(std::string current_link){
     }
 
     auto path = domain->getPath(current_link);
+    int page_id;
 
     try{
         database->insert_page(path, r.status_code, r.text);     //добавить страницу в бд
+        page_id = database->page_id(path);          //сохранить id добавленной страницы
         this->buffer_erase(current_link);           //удалить страницу из буфера
     }
     catch (...){
@@ -35,7 +37,6 @@ void SearchEngine::indexing(std::string current_link){
         this->buffer_erase(current_link);           //удалить страницу из буфера
         return;
     }
-    auto page_id = database->page_id(path);  //сохранить id добавленной страницы
 
     GumboAPI html_parse(r.text);
     html_parse.get_links([this](std::string links){     //получить ссылки со страницы
@@ -44,7 +45,7 @@ void SearchEngine::indexing(std::string current_link){
         mutex.unlock();
         if(domain->is_ownLink(links) && now_index) {     //игнорировать ссылки сторонних сайтов
             try{
-                //if(database.page_id(domain->getPath(links)) == 0) buffer_sites.insert(links);    //TODO  добавить полученную ссылку в буфер
+                if(database->page_id(domain->getPath(links)) == 0) buffer_sites.insert(links);
             }
             catch (...){
                 //TODO когда будут добавлены логи пометить в них скип проблематичного сайта
@@ -59,8 +60,11 @@ void SearchEngine::indexing(std::string current_link){
 
     //добавление слов в бд
     for(auto& word : buffer_words){
+        mutex.lock();
+        bool now_index = now_indexing;
+        mutex.unlock();
+        if(!now_index) break;
         try{
-
             if(auto word_id = database->word_id(word.first); word_id > 0){   //слово присутствует в бд
                 database->update_word(word.first);   //увеличить frequency на 1 в бд
                 database->insert_search_index(page_id, word_id, word.second);
@@ -87,7 +91,10 @@ nlohmann::json SearchEngine::startIndexing() {
     buffer_sites.insert(config->start_page);
     while (!buffer_sites.empty()){
         std::vector<std::thread> threads;
-        for(auto current_link : buffer_sites) threads.emplace_back(&SearchEngine::indexing, this, current_link);
+        for(auto current_link : buffer_sites) {
+            threads.emplace_back(&SearchEngine::indexing, this, current_link);
+            if(threads.size() > 100) break; //лимит 100 потоков
+        }
         for(auto& thread : threads) thread.join();
     }
     status["result"] = true;
@@ -99,8 +106,7 @@ nlohmann::json SearchEngine::stopIndexing() {
     mutex.lock();
     now_indexing = false;
     mutex.unlock();
-    nlohmann::json status;
-    status["result"] = "stop";
+    nlohmann::json status = {{"result", "stop"}};
     return status;
 }
 
@@ -111,6 +117,27 @@ nlohmann::json SearchEngine::status() {
     status["words_count"] = database->size("search_index");
     status["index_size"] = database->size("word");
     return status;
+}
+
+nlohmann::json SearchEngine::search(std::string query, int offset, int limit) {
+    nlohmann::json status;
+    if(query.empty()){
+        status["result"] = false;
+        status["error"] = "Задан пустой поисковый запрос";
+        return status;
+    }
+    while(query.front() == '+' && !query.empty()) query.erase(query.begin()); //добавлено на случай если запрос некорректный и 1 символом будет +
+    std::unordered_set<std::string> worlds;
+    std::stringstream parse;
+    parse << query;
+    while (true){
+        std::string word;
+        std::getline(parse, word, '+');
+        if(!word.empty()){
+            worlds.insert(stemming.word_stemming(word));
+        } else break;
+    }
+    return database->search(worlds);
 }
 
 SearchEngine::SearchEngine(std::shared_ptr<Config> _config) {

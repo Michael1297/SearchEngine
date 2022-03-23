@@ -20,7 +20,7 @@ SQL_database::SQL_database(std::shared_ptr<Config> config) {
     this->use();    //использовать бд
 }
 
-void SQL_database::create() {   //"FOREIGN KEY (site_id) references sites(id) "
+void SQL_database::create() {
     this->drop();
 
     std::string command = fmt::format("CREATE DATABASE {};", database_name);
@@ -48,7 +48,9 @@ void SQL_database::create() {   //"FOREIGN KEY (site_id) references sites(id) "
               "id INT AUTO_INCREMENT PRIMARY KEY, "
               "page_id INT NOT NULL, "      //идентификатор страницы.
               "word_id INT NOT NULL, "      //идентификатор слова
-              "rnk FLOAT NOT NULL"          //ранг слова в данном поле этой страницы
+              "rnk FLOAT NOT NULL, "         //ранг слова в данном поле этой страницы
+              "FOREIGN KEY (page_id) references page(id), "
+              "FOREIGN KEY (word_id) references word(id) "
               ");";
     execute(*database, NANODBC_TEXT(command));
 }
@@ -118,4 +120,25 @@ int SQL_database::size(std::string table) {
     } else {
         return 0;
     }
+}
+
+#include <iostream>
+nlohmann::json SQL_database::search(std::unordered_set<std::string>& worlds) {
+    nlohmann::json data;
+    int count = 0;
+    for(auto& world : worlds) {
+        std::string command = fmt::format(R"(SELECT frequency FROM word WHERE value="{}";)", world);
+        auto result = execute(*database, NANODBC_TEXT(command));
+        if(result.next()) {
+            data[count]["value"] = world;
+            data[count]["frequency"] = result.get<int>("frequency");
+            count++;
+        }
+    }
+/*
+    std::sort(data.begin(), data.end(),[](std::pair<std::string, int> x, std::pair<std::string, int> y){
+        return x.second < y.second;
+    });
+*/
+    return data;
 }
