@@ -137,7 +137,9 @@ nlohmann::json SearchEngine::search(std::string query, int offset, int limit) {
             worlds.insert(stemming.word_stemming(word));
         } else break;
     }
-    return database->search(worlds);
+    status["data"] = database->search(worlds);
+
+    return status;
 }
 
 SearchEngine::SearchEngine(std::shared_ptr<Config> _config) {

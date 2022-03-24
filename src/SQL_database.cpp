@@ -125,20 +125,58 @@ int SQL_database::size(std::string table) {
 #include <iostream>
 nlohmann::json SQL_database::search(std::unordered_set<std::string>& worlds) {
     nlohmann::json data;
-    int count = 0;
+    std::pair<std::string, int> minimum = {"", 0}; //используется для хранения минимального value + frequency
+
+    //поиск минимального value и frequency
     for(auto& world : worlds) {
         std::string command = fmt::format(R"(SELECT frequency FROM word WHERE value="{}";)", world);
-        auto result = execute(*database, NANODBC_TEXT(command));
+        nanodbc::result result;
+        try{
+            result = execute(*database, NANODBC_TEXT(command));
+        }
+        catch (...){    //возникли проблемы при поиске слова
+            worlds.erase(world);
+            continue;
+        }
         if(result.next()) {
-            data[count]["value"] = world;
-            data[count]["frequency"] = result.get<int>("frequency");
-            count++;
+            if(minimum.first.empty() || minimum.second > result.get<int>("frequency")){ //добавляем 1 значение или меняем если frequency меньше
+                minimum.first = world;
+                minimum.second = result.get<int>("frequency");
+            }
+        } else{
+            worlds.erase(world);    //слово не найдено в бд
         }
     }
-/*
-    std::sort(data.begin(), data.end(),[](std::pair<std::string, int> x, std::pair<std::string, int> y){
-        return x.second < y.second;
-    });
-*/
+
+    if(minimum.first.empty()) return {};    //слова не найдены в бд
+
+    std::unordered_set<int> page_id;    //page_id минимального слова
+    {
+        std::string command = fmt::format(R"(SELECT page_id FROM word JOIN search_index ON word.id = search_index.word_id WHERE value="{}";)", minimum.first);
+        auto result = execute(*database, NANODBC_TEXT(command));
+        while (result.next()) page_id.insert(result.get<int>("page_id"));   //добавление page_id в массив page_id
+    }
+
+    //поиск ссылок принадлежащих другим словам
+    for(auto& world : worlds){
+        if(world == minimum.first) continue;
+        std::unordered_set<int> others_page_id;
+        std::string command = fmt::format(R"(SELECT page_id FROM word JOIN search_index ON word.id = search_index.word_id WHERE value="{}";)", world);
+        auto result = execute(*database, NANODBC_TEXT(command));
+        while (result.next()) others_page_id.insert(result.get<int>("page_id"));   //добавление page_id в массив others_page_id
+        for(auto& id : page_id){
+            if(others_page_id.count(id) == 0) page_id.erase(id); //удалить id 1 слова, так как оно не найдено во 2 слове
+        }
+    }
+
+    //добавление значений в json
+    for(auto& id : page_id){
+        auto count = data.size();
+        std::string command = fmt::format("SELECT * FROM page  WHERE id={};", id);
+        auto result = execute(*database, NANODBC_TEXT(command));
+        result.next();
+        data[count]["uri"] = result.get<std::string>("path");
+
+    }
     return data;
 }
