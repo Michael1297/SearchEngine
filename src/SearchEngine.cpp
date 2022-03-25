@@ -54,7 +54,7 @@ void SearchEngine::indexing(std::string current_link){
     });
 
     std::map<std::string, int> buffer_words;    //буфер слов
-    html_parse.get_text([this, &buffer_words](std::string out){
+    html_parse.get_words([this, &buffer_words](std::string out){
         buffer_words[stemming.word_stemming(out)]++;    //добавление слов в буфер
     });
 
@@ -137,7 +137,19 @@ nlohmann::json SearchEngine::search(std::string query, int offset, int limit) {
             worlds.insert(stemming.word_stemming(word));
         } else break;
     }
-    status["data"] = database->search(worlds);
+
+    auto search_result = database->search(worlds);
+
+    if(search_result.empty()){
+        status["result"] = false;
+        status["error"] = "Не найдено";
+    } else{
+        status["result"] = true;
+        status["count"] = search_result.size();
+        for(int i = offset; i < limit + offset && i < search_result.size(); i++){
+            status["data"].push_back(search_result[i]);
+        }
+    }
 
     return status;
 }

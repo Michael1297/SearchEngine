@@ -1,8 +1,10 @@
 #include "SQL_database.h"
+#include <regex>
 #include <fmt/core.h>
 #include <base64/include/base64.hpp>
 #include "Config.h"
 #include "Exception.h"
+#include "GumboAPI.h"
 
 SQL_database::SQL_database(std::shared_ptr<Config> config) {
     database_name = config->databaseSQL;
@@ -150,33 +152,68 @@ nlohmann::json SQL_database::search(std::unordered_set<std::string>& worlds) {
 
     if(minimum.first.empty()) return {};    //слова не найдены в бд
 
-    std::unordered_set<int> page_id;    //page_id минимального слова
+
+    std::unordered_set<int> minimum_page_id;    //page_id минимального слова
     {
         std::string command = fmt::format(R"(SELECT page_id FROM word JOIN search_index ON word.id = search_index.word_id WHERE value="{}";)", minimum.first);
         auto result = execute(*database, NANODBC_TEXT(command));
-        while (result.next()) page_id.insert(result.get<int>("page_id"));   //добавление page_id в массив page_id
+        while (result.next()) minimum_page_id.insert(result.get<int>("page_id"));   //добавление page_id в массив page_id
     }
 
-    //поиск ссылок принадлежащих другим словам
+    //поиск общих ссылок
     for(auto& world : worlds){
         if(world == minimum.first) continue;
         std::unordered_set<int> others_page_id;
         std::string command = fmt::format(R"(SELECT page_id FROM word JOIN search_index ON word.id = search_index.word_id WHERE value="{}";)", world);
         auto result = execute(*database, NANODBC_TEXT(command));
         while (result.next()) others_page_id.insert(result.get<int>("page_id"));   //добавление page_id в массив others_page_id
-        for(auto& id : page_id){
-            if(others_page_id.count(id) == 0) page_id.erase(id); //удалить id 1 слова, так как оно не найдено во 2 слове
+        for(auto& id : minimum_page_id){    //сравнение page_id минимального слова с page_id других слов
+            if(others_page_id.count(id) == 0) minimum_page_id.erase(id); //удалить id 1 слова, так как оно не найдено во 2 слове
         }
     }
 
+    float total_relevance = 0;      //максимальная абсолютная релевантность
+    std::map<int, float> relevance; //релевантность для конкретной страницы
+    for(auto& id : minimum_page_id){    //вычисление релевантности
+        float page_relevance = 0;
+        for(auto& world : worlds) {
+            std::string command = fmt::format("SELECT rnk FROM word JOIN search_index ON word.id = search_index.word_id "
+                                              "WHERE page_id={} AND value=\"{}\";", id, world);
+            auto result = execute(*database, NANODBC_TEXT(command));
+            result.next();
+            page_relevance += result.get<float>("rnk");
+        }
+        total_relevance += page_relevance;
+        relevance[id] = page_relevance;
+    }
+
+    std::regex fragment_regex("(^|\\s)" + minimum.first + "($|\\s)", std::regex::icase);
+
     //добавление значений в json
-    for(auto& id : page_id){
+    for(auto& id : minimum_page_id){
         auto count = data.size();
-        std::string command = fmt::format("SELECT * FROM page  WHERE id={};", id);
+
+        std::string command = fmt::format("SELECT * FROM page WHERE id={};", id);
         auto result = execute(*database, NANODBC_TEXT(command));
         result.next();
-        data[count]["uri"] = result.get<std::string>("path");
+        GumboAPI html_parse(base64::from_base64(result.get<std::string>("content")));
 
+        html_parse.get_fragments([&](std::string fragment){      //получение фрагмента содержащего редкое слово
+            if(std::regex_search(fragment, fragment_regex)){
+                data[count]["snippet"] = std::regex_replace(fragment, fragment_regex, " <b>" + minimum.first + "</b> ");
+                return;
+            }
+        });
+
+        data[count]["title"] = html_parse.find_title();
+        data[count]["uri"] = result.get<std::string>("path");
+        data[count]["relevance"] = relevance[id] / total_relevance;
     }
+
+    //сортировка json по значению relevance
+    std::sort(data.begin(), data.end(), [](nlohmann::json& first, nlohmann::json& second){
+        return first["relevance"] > second["relevance"];
+    });
+
     return data;
 }
