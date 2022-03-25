@@ -1,7 +1,4 @@
 #pragma once
-#ifndef MAIN_CPP_SERVER_HPP
-#define MAIN_CPP_SERVER_HPP
-
 #include <iostream> //TODO del
 #include <functional>
 #include "Config.h"
@@ -23,7 +20,7 @@ public:
 };
 
 //https://oatpp.io/docs/start/step-by-step/
-void run_server(std::shared_ptr<Config> config, std::shared_ptr<SearchEngine> searchEngine) {
+void run_server(std::shared_ptr<SearchEngine> searchEngine) {
 
     /* Create Router for HTTP requests routing */
     auto router = oatpp::web::server::HttpRouter::createShared();
@@ -50,7 +47,7 @@ void run_server(std::shared_ptr<Config> config, std::shared_ptr<SearchEngine> se
         auto queryParams = oatpp::network::Url::Parser::parseQueryParams(tail);     /* parse query params from tail */
         std::string query = queryParams.get("query").getValue("");
         std::string offset = queryParams.get("offset").getValue("0");
-        std::string limit = queryParams.get("limit").getValue("0");
+        std::string limit = queryParams.get("limit").getValue("2147483647");
         return searchEngine->search(query, std::stoi(offset), std::stoi(limit)).dump(1, '\t');
     }));
 
@@ -59,7 +56,8 @@ void run_server(std::shared_ptr<Config> config, std::shared_ptr<SearchEngine> se
     auto connectionHandler = oatpp::web::server::HttpConnectionHandler::createShared(router);
 
     /* Create TCP connection provider */
-    auto connectionProvider = oatpp::network::tcp::server::ConnectionProvider::createShared({config->host, static_cast<v_uint16>(std::stoi(config->port)), oatpp::network::Address::IP_4});
+    auto connectionProvider = oatpp::network::tcp::server::ConnectionProvider::createShared({Config::Instance().host,
+                                                                                             static_cast<v_uint16>(std::stoi(Config::Instance().port)), oatpp::network::Address::IP_4});
 
     /* Create server which takes provided TCP connections and passes them to HTTP connection handler */
     oatpp::network::Server server(connectionProvider, connectionHandler);
@@ -70,5 +68,3 @@ void run_server(std::shared_ptr<Config> config, std::shared_ptr<SearchEngine> se
     /* Run server */
     server.run();
 }
-
-#endif //MAIN_CPP_SERVER_HPP

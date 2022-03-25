@@ -1,6 +1,3 @@
-#ifndef SEARCHENGINE_EXCEPTION_H
-#define SEARCHENGINE_EXCEPTION_H
-
 #pragma once
 #include <exception>
 #include <string>
@@ -15,4 +12,3 @@ class Exception: public std::exception{
 public:
     Exception(std::string text): message(text){}
 };
-#endif //SEARCHENGINE_EXCEPTION_H

@@ -1,11 +1,11 @@
-#ifndef SEARCHENGINE_CONFIG_H
-#define SEARCHENGINE_CONFIG_H
-
 #pragma once
 #include <string>
 
 class Config{
 public:
+    Config(const Config& root) = delete;
+    Config& operator=(const Config&) = delete;
+    static Config& Instance();
     Config();
     std::string driverSQL;
     std::string serverSQL;
@@ -17,5 +17,3 @@ public:
     std::string host;
     std::string port;
 };
-
-#endif //SEARCHENGINE_CONFIG_H

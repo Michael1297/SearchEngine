@@ -1,6 +1,3 @@
-#ifndef SEARCHENGINE_STEMMING_H
-#define SEARCHENGINE_STEMMING_H
-
 #pragma once
 #include <regex>
 #include <codecvt>
@@ -19,5 +16,3 @@ public:
     static void ru_to_lower(std::wstring& word);                   //ru буквы в нижний регистр
     std::string word_stemming(const std::string& input_word);      //стимминг
 };
-
-#endif //SEARCHENGINE_STEMMING_H

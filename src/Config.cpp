@@ -34,3 +34,8 @@ Config::Config() {
     port = config["Server"]["port"];
     if(port.empty() || port.find_first_not_of("0123456789") != std::string::npos) throw Exception("Invalid config file");
 }
+
+Config& Config::Instance() {
+        static Config theSingleInstance;
+        return theSingleInstance;
+}

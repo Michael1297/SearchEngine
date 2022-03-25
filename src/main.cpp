@@ -1,19 +1,15 @@
-#include <iostream>
 #include <memory>
 #include "SearchEngine.h"
-#include "Config.h"
 #include "Server.hpp"
 
-
 int main() {
-    auto config = std::make_shared<Config>();
-    auto searchEngine = std::make_shared<SearchEngine>(config);
+    auto searchEngine = std::make_shared<SearchEngine>();
     //https://oatpp.io/docs/start/step-by-step/
     /* Init oatpp Environment */
     oatpp::base::Environment::init();
 
     /* Run App */
-    run_server(config, searchEngine);
+    run_server(searchEngine);
 
     /* Destroy oatpp Environment */
     oatpp::base::Environment::destroy();

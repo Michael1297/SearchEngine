@@ -1,8 +1,4 @@
 #pragma once
-
-#ifndef MAIN_CPP_GUMBOAPI_H
-#define MAIN_CPP_GUMBOAPI_H
-
 #include <string>
 #include <functional>
 #include "gumbo.h"
@@ -18,5 +14,3 @@ public:
     const std::string find_title();
     ~GumboAPI();
 };
-
-#endif //MAIN_CPP_GUMBOAPI_H

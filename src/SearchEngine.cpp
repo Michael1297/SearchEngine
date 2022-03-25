@@ -4,11 +4,24 @@
 #include <map>
 #include <cpr/cpr.h>
 #include "GumboAPI.h"
+#include <Config.h>
 
 void SearchEngine::buffer_erase(std::string& current_link) {
     mutex.lock();
     buffer_sites.erase(current_link);
     mutex.unlock();
+}
+
+void SearchEngine::parsing(std::unordered_set<std::string>& worlds, const std::string& text, char symbol) {
+    std::stringstream parse;
+    parse << text;
+    while (true){
+        std::string word;
+        std::getline(parse, word, symbol);
+        if(!word.empty()){
+            worlds.insert(stemming.word_stemming(word));
+        } else break;
+    }
 }
 
 void SearchEngine::indexing(std::string current_link){
@@ -88,7 +101,7 @@ nlohmann::json SearchEngine::startIndexing() {
     }
     now_indexing = true;
     database->create();
-    buffer_sites.insert(config->start_page);
+    buffer_sites.insert(Config::Instance().start_page);
     while (!buffer_sites.empty()){
         std::vector<std::thread> threads;
         for(auto current_link : buffer_sites) {
@@ -128,15 +141,7 @@ nlohmann::json SearchEngine::search(std::string query, int offset, int limit) {
     }
     while(query.front() == '+' && !query.empty()) query.erase(query.begin()); //добавлено на случай если запрос некорректный и 1 символом будет +
     std::unordered_set<std::string> worlds;
-    std::stringstream parse;
-    parse << query;
-    while (true){
-        std::string word;
-        std::getline(parse, word, '+');
-        if(!word.empty()){
-            worlds.insert(stemming.word_stemming(word));
-        } else break;
-    }
+    this->parsing(worlds, query);
 
     auto search_result = database->search(worlds);
 
@@ -154,8 +159,7 @@ nlohmann::json SearchEngine::search(std::string query, int offset, int limit) {
     return status;
 }
 
-SearchEngine::SearchEngine(std::shared_ptr<Config> _config) {
-    database = std::make_unique<SQL_database>(_config);
-    config = _config;
-    domain = std::make_unique<HttpTool>(_config->start_page);
+SearchEngine::SearchEngine() {
+    database = std::make_unique<SQL_database>();
+    domain = std::make_unique<HttpTool>(Config::Instance().start_page);
 }

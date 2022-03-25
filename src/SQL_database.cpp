@@ -6,20 +6,24 @@
 #include "Exception.h"
 #include "GumboAPI.h"
 
-SQL_database::SQL_database(std::shared_ptr<Config> config) {
-    database_name = config->databaseSQL;
+SQL_database::SQL_database() {
+    database_name = Config::Instance().databaseSQL;
+    this->connection();
+    this->use();    //использовать бд
+}
 
+void SQL_database::connection() {
     //строка подключения к бд
     //  Driver={MySQL ODBC 8.0 ANSI Driver};Server=<server>;Database=<database>;UID=<user id>;PWD=<password>
     std::string connection_string = fmt::format("Driver={};Server={};Port={};UID={};PWD={};",
-                                                config->driverSQL, config->serverSQL, config->portSQL, config->loginSQL, config->passwordSQL);
+                                                Config::Instance().driverSQL, Config::Instance().serverSQL, Config::Instance().portSQL,
+                                                Config::Instance().loginSQL, Config::Instance().passwordSQL);
     try{
         database = std::make_unique<nanodbc::connection>(NANODBC_TEXT(connection_string));
     }
     catch (...){
         throw Exception("Failed to connect to database");   //не удалось подключиться к бд
     }
-    this->use();    //использовать бд
 }
 
 void SQL_database::create() {
@@ -124,7 +128,23 @@ int SQL_database::size(std::string table) {
     }
 }
 
-#include <iostream>
+void SQL_database::general(std::unordered_set<int>& main, std::unordered_set<int>& other) {
+    for(auto& single : main){
+        if(!other.count(single)) main.erase(single);
+    }
+}
+
+float SQL_database::get_relevance(int page_id, std::string world) {
+    std::string command = fmt::format("SELECT rnk FROM word JOIN search_index ON word.id = search_index.word_id "
+                                      "WHERE page_id={} AND value=\"{}\";", page_id, world);
+    auto result = execute(*database, NANODBC_TEXT(command));
+    if(result.next()){
+        return result.get<float>("rnk");
+    } else{
+        return 0;
+    }
+}
+
 nlohmann::json SQL_database::search(std::unordered_set<std::string>& worlds) {
     nlohmann::json data;
     std::pair<std::string, int> minimum = {"", 0}; //используется для хранения минимального value + frequency
@@ -167,9 +187,7 @@ nlohmann::json SQL_database::search(std::unordered_set<std::string>& worlds) {
         std::string command = fmt::format(R"(SELECT page_id FROM word JOIN search_index ON word.id = search_index.word_id WHERE value="{}";)", world);
         auto result = execute(*database, NANODBC_TEXT(command));
         while (result.next()) others_page_id.insert(result.get<int>("page_id"));   //добавление page_id в массив others_page_id
-        for(auto& id : minimum_page_id){    //сравнение page_id минимального слова с page_id других слов
-            if(others_page_id.count(id) == 0) minimum_page_id.erase(id); //удалить id 1 слова, так как оно не найдено во 2 слове
-        }
+        this->general(minimum_page_id, others_page_id); //удалить из 1 массива id, не найденные во 2 массива
     }
 
     float total_relevance = 0;      //максимальная абсолютная релевантность
@@ -177,11 +195,7 @@ nlohmann::json SQL_database::search(std::unordered_set<std::string>& worlds) {
     for(auto& id : minimum_page_id){    //вычисление релевантности
         float page_relevance = 0;
         for(auto& world : worlds) {
-            std::string command = fmt::format("SELECT rnk FROM word JOIN search_index ON word.id = search_index.word_id "
-                                              "WHERE page_id={} AND value=\"{}\";", id, world);
-            auto result = execute(*database, NANODBC_TEXT(command));
-            result.next();
-            page_relevance += result.get<float>("rnk");
+            page_relevance += this->get_relevance(id, world);
         }
         total_relevance += page_relevance;
         relevance[id] = page_relevance;
@@ -193,7 +207,7 @@ nlohmann::json SQL_database::search(std::unordered_set<std::string>& worlds) {
     for(auto& id : minimum_page_id){
         auto count = data.size();
 
-        std::string command = fmt::format("SELECT * FROM page WHERE id={};", id);
+        std::string command = fmt::format("SELECT content, path FROM page WHERE id={};", id);
         auto result = execute(*database, NANODBC_TEXT(command));
         result.next();
         GumboAPI html_parse(base64::from_base64(result.get<std::string>("content")));
@@ -214,6 +228,5 @@ nlohmann::json SQL_database::search(std::unordered_set<std::string>& worlds) {
     std::sort(data.begin(), data.end(), [](nlohmann::json& first, nlohmann::json& second){
         return first["relevance"] > second["relevance"];
     });
-
     return data;
 }

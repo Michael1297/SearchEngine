@@ -4,6 +4,12 @@
 using namespace std::regex_constants;       // для флага icase - игнорирование регистра в ссылке
 
 HttpTool::HttpTool(std::string link){
+    domain = this->getDomain(link);
+    HttpTool::escape(link, '.');    //экранирование '.' в link для применения в regex
+    own_link_regex = std::regex("(^https?://|^)(www\\.|)" + link + "(/\\S*$|$)", icase);
+}
+
+std::string HttpTool::getDomain(std::string link) {
     std::regex has_http("^https?://\\S+");
     if(std::regex_match(link, has_http)){       //убирает http://
         link.erase(link.begin(), link.begin() + link.find("//") + 2);
@@ -20,10 +26,7 @@ HttpTool::HttpTool(std::string link){
         link.resize(find);       //убирает буквы после /
     }
     if(link.empty()) throw Exception("Invalid link");
-
-    domain = link;
-    HttpTool::escape(link, '.');    //экранирование '.' в link для применения в regex
-    own_link_regex = std::regex("(^https?://|^)(www\\.|)" + link + "(/\\S*$|$)", icase);
+    return link;
 }
 
 std::string HttpTool::getPath(std::string link) {
