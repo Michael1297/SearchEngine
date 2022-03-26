@@ -8,7 +8,7 @@
 
 SQL_database::SQL_database() {
     database_name = Config::Instance().databaseSQL;
-    this->connection();
+    this->connection();     //подключиться к бд
     this->use();    //использовать бд
 }
 
@@ -55,8 +55,8 @@ void SQL_database::create() {
               "page_id INT NOT NULL, "      //идентификатор страницы.
               "word_id INT NOT NULL, "      //идентификатор слова
               "rnk FLOAT NOT NULL, "         //ранг слова в данном поле этой страницы
-              "FOREIGN KEY (page_id) references page(id), "
-              "FOREIGN KEY (word_id) references word(id) "
+              "FOREIGN KEY (page_id) references page(id) ON DELETE CASCADE, "
+              "FOREIGN KEY (word_id) references word(id) ON DELETE CASCADE"
               ");";
     execute(*database, NANODBC_TEXT(command));
 }
@@ -115,6 +115,22 @@ void SQL_database::update_word(std::string value) {
 
 void SQL_database::insert_search_index(int page_id, int word_id, float rank) {
     std::string command = fmt::format(R"(INSERT INTO search_index(page_id, word_id, rnk) VALUES ({}, {}, {});)", page_id, word_id, rank);
+    execute(*database, NANODBC_TEXT(command));
+}
+
+void SQL_database::erase_page(std::string path) {
+    //уменьшить значение frequency на 1
+    std::string command = fmt::format("UPDATE word JOIN search_index ON word.id=search_index.word_id "
+                                      "JOIN page ON page.id=search_index.page_id "
+                                      "SET word.frequency=word.frequency-1 WHERE page.path=\"{}\";", path);
+    execute(*database, NANODBC_TEXT(command));
+
+    //удалить word где frequency < 1
+    command = "DELETE FROM word WHERE frequency < 1;";
+    execute(*database, NANODBC_TEXT(command));
+
+    //удалить страницу
+    command = fmt::format("DELETE FROM page WHERE path=\"{}\";", path);
     execute(*database, NANODBC_TEXT(command));
 }
 

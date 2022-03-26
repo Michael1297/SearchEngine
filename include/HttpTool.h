@@ -11,7 +11,7 @@ class HttpTool{
     std::regex www_regex = std::regex("^www\\.\\S+");
 
 public:
-    HttpTool(std::string link);
+    HttpTool();
     bool is_ownLink(std::string& link);
     std::string getDomain();
     std::string getDomain(std::string link);

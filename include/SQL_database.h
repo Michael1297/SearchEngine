@@ -18,6 +18,7 @@ public:
     void insert_page(std::string path, int code, std::string content);  //добавить сайт в бд
     void insert_word(std::string value);    //добавить слово в бд
     void insert_search_index(int page_id, int word_id, float rank);
+    void erase_page(std::string path);
     int page_id(std::string path);          //id страницы
     int word_id(std::string value);         //id слова
     void update_word(std::string value);    //увеличить frequency на 1

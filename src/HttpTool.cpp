@@ -1,23 +1,23 @@
 #include <HttpTool.h>
 #include "Exception.h"
+#include <Config.h>
 
-using namespace std::regex_constants;       // для флага icase - игнорирование регистра в ссылке
+using namespace std::regex_constants;       // для флага icase - игнорирование регистра
 
-HttpTool::HttpTool(std::string link){
-    domain = this->getDomain(link);
-    HttpTool::escape(link, '.');    //экранирование '.' в link для применения в regex
-    own_link_regex = std::regex("(^https?://|^)(www\\.|)" + link + "(/\\S*$|$)", icase);
+HttpTool::HttpTool(){
+    domain = this->getDomain(Config::Instance().start_page);
+    std::string domain_escape = domain;
+    HttpTool::escape(domain_escape, '.');    //экранирование '.' в link для применения в regex
+    own_link_regex = std::regex("(^https?://?|^)(www\\.|)" + domain_escape + "(/\\S*$|$)", icase);
 }
 
 std::string HttpTool::getDomain(std::string link) {
-    std::regex has_http("^https?://\\S+");
-    if(std::regex_match(link, has_http)){       //убирает http://
+    if(std::regex_match(link, http_regex)){       //убирает http://
         link.erase(link.begin(), link.begin() + link.find("//") + 2);
     }
     if(link.empty()) throw Exception("Invalid link");
 
-    std::regex has_www("^www\\.\\S+");
-    if(std::regex_match(link, has_www)){       //убирает www.
+    if(std::regex_match(link, www_regex)){       //убирает www.
         link.erase(link.begin(), link.begin() + 4);
     }
     if(link.empty()) throw Exception("Invalid link");

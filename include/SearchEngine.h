@@ -1,6 +1,5 @@
 #pragma once
 #include <string>
-#include <memory>
 #include <mutex>
 #include <unordered_set>
 #include <nlohmann/json.hpp>
@@ -12,17 +11,17 @@
 class SearchEngine{
     bool now_indexing = false;
     std::mutex mutex;
-    std::unique_ptr<HttpTool> domain;
+    HttpTool domain;
     std::unordered_set<std::string> buffer_sites;           //сайты на индексацию
     Stemming stemming;                                      //стемминг слова
-    std::unique_ptr<SQL_database> database;                 //база данных
+    SQL_database database;                                  //база данных
     void indexing(std::string current_link);
     void buffer_erase(std::string& current_link);           //удалить страницу из буфера
     void parsing(std::unordered_set<std::string>& worlds, const std::string& text, char symbol = '+');
 public:
 
-    SearchEngine();                //ввод ссылки + генерация own_link regex для проверки ссылок
     nlohmann::json startIndexing();
+    nlohmann::json startIndexing(std::string queurls);
     nlohmann::json stopIndexing();
     nlohmann::json status();
     nlohmann::json search(std::string query, int offset, int limit);
