@@ -20,5 +20,4 @@ int main() {
 
     /* Destroy oatpp Environment */
     oatpp::base::Environment::destroy();
-
 }

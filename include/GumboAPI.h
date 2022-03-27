@@ -7,7 +7,7 @@ class GumboAPI{
     GumboOutput* output = nullptr;
 
 public:
-    GumboAPI(std::string);
+    GumboAPI(std::string code);
     void get_links(std::function<void(std::string)> function, GumboNode* node = nullptr);
     void get_fragments(std::function<void(std::string)> function, GumboNode* node = nullptr);
     void get_words(std::function<void(std::string)> function);
