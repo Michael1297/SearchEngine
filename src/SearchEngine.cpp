@@ -24,15 +24,10 @@ void SearchEngine::parsing(std::unordered_set<std::string>& worlds, const std::s
     }
 }
 
-void SearchEngine::indexing(std::string current_link){
+void SearchEngine::indexing(std::string current_link, bool single){
     cpr::Response r = cpr::Get(cpr::Url(current_link));
     if(r.status_code == 404 || r.status_code == 500){
-        try{
-            database.insert_page(domain.getPath(current_link), r.status_code, "");
-        }
-        catch (...){
-            //TODO когда будут добавлены логи пометить в них скип проблематичного сайта при добавлении в бд
-        }
+        database.insert_page(domain.getPath(current_link), r.status_code, "");
         this->buffer_erase(current_link);           //удалить страницу из буфера
         return;
     }
@@ -40,29 +35,17 @@ void SearchEngine::indexing(std::string current_link){
     auto path = domain.getPath(current_link);
     int page_id;
 
-    try{
-        database.insert_page(path, r.status_code, r.text);     //добавить страницу в бд
-        page_id = database.page_id(path);          //сохранить id добавленной страницы
-        this->buffer_erase(current_link);           //удалить страницу из буфера
-    }
-    catch (...){
-        //TODO когда будут добавлены логи пометить в них скип проблематичного сайта при добавлении в бд
-        this->buffer_erase(current_link);           //удалить страницу из буфера
-        return;
-    }
+    database.insert_page(path, r.status_code, r.text);     //добавить страницу в бд
+    page_id = database.page_id(path);          //сохранить id добавленной страницы
+    this->buffer_erase(current_link);           //удалить страницу из буфера
 
     GumboAPI html_parse(r.text);
-    html_parse.get_links([this](std::string links){     //получить ссылки со страницы
+    if(!single) html_parse.get_links([this](std::string links){     //получить ссылки со страницы
         mutex.lock();
         bool now_index = now_indexing;
         mutex.unlock();
         if(domain.is_ownLink(links) && now_index) {     //игнорировать ссылки сторонних сайтов
-            try{
-                if(database.page_id(domain.getPath(links)) == 0) buffer_sites.insert(links);
-            }
-            catch (...){
-                //TODO когда будут добавлены логи пометить в них скип проблематичного сайта
-            }
+            if(database.page_id(domain.getPath(links)) == 0) buffer_sites.insert(links);
         }
     });
 
@@ -77,103 +60,71 @@ void SearchEngine::indexing(std::string current_link){
         bool now_index = now_indexing;
         mutex.unlock();
         if(!now_index) break;
-        try{
-            if(auto word_id = database.word_id(word.first); word_id > 0){   //слово присутствует в бд
-                database.update_word(word.first);   //увеличить frequency на 1 в бд
-                database.insert_search_index(page_id, word_id, word.second);
-            } else{
-                database.insert_word(word.first);   //добавить слово в бд
-                database.insert_search_index(page_id, database.word_id(word.first), word.second);
-            }
-        }
-        catch (...){
-            //TODO когда будут добавлены логи пометить в них скип проблематичного слова
+        if(auto word_id = database.word_id(word.first); word_id > 0){   //слово присутствует в бд
+            database.update_word(word.first);   //увеличить frequency на 1 в бд
+            database.insert_search_index(page_id, word_id, word.second);
+        } else{
+            database.insert_word(word.first);   //добавить слово в бд
+            database.insert_search_index(page_id, database.word_id(word.first), word.second);
         }
     }
 }
 
 nlohmann::json SearchEngine::startIndexing() {
-    nlohmann::json status;
     if(now_indexing){
+        nlohmann::json status;
         status["result"] = false;
         status["error"] = "Индексация уже запущена";
         return status;
     }
+
     now_indexing = true;
     database.create();
     buffer_sites.insert(Config::Instance().start_page);
     while (!buffer_sites.empty()){
         std::vector<std::thread> threads;
         for(auto current_link : buffer_sites) {
-            threads.emplace_back(&SearchEngine::indexing, this, current_link);
+            threads.emplace_back(&SearchEngine::indexing, this, current_link, false);
             if(threads.size() > 100) break; //лимит 100 потоков
         }
         for(auto& thread : threads) thread.join();
     }
-    status["result"] = true;
+
     now_indexing = false;
-    return status;
+    return {{"result", true}};
 }
 
 nlohmann::json SearchEngine::startIndexing(std::string queurls) {
+    if(now_indexing){
+        nlohmann::json status;
+        status["result"] = false;
+        status["error"] = "Индексация уже запущена";
+        return status;
+    }
+
     std::unordered_set<std::string> sites;
     this->parsing(sites, queurls);
-
+    now_indexing = true;
+    std::vector<std::thread> threads;
     for(auto site : sites){
-        if(!domain.is_ownLink(site)) continue;
-        auto path = domain.getPath(site);
-        database.erase_page(path);
-        cpr::Response r = cpr::Get(cpr::Url(site));
-        if(r.status_code == 404 || r.status_code == 500){
-            try{
-                database.insert_page(path, r.status_code, "");
-            }
-            catch (...){
-                //TODO когда будут добавлены логи пометить в них скип проблематичного сайта при добавлении в бд
-            }
-            continue;
-        } else{
-            try{
-                database.insert_page(path, r.status_code, r.text);
-            }
-            catch (...){
-                continue;
-                //TODO когда будут добавлены логи пометить в них скип проблематичного сайта при добавлении в бд
-            }
-        }
-
-        GumboAPI html_parse(r.text);
-        std::map<std::string, int> buffer_words;    //буфер слов
-        html_parse.get_words([this, &buffer_words](std::string out){
-            buffer_words[stemming.word_stemming(out)]++;    //добавление слов в буфер
-        });
-        auto page_id = database.page_id(path);          //сохранить id добавленной страницы
-        //добавление слов в бд
-        for(auto& word : buffer_words){
-            try{
-                if(auto word_id = database.word_id(word.first); word_id > 0){   //слово присутствует в бд
-                    database.update_word(word.first);   //увеличить frequency на 1 в бд
-                    database.insert_search_index(page_id, word_id, word.second);
-                } else{
-                    database.insert_word(word.first);   //добавить слово в бд
-                    database.insert_search_index(page_id, database.word_id(word.first), word.second);
-                }
-            }
-            catch (...){
-                //TODO когда будут добавлены логи пометить в них скип проблематичного слова
-            }
-
-        }
-
+        if(domain.is_ownLink(site)) threads.emplace_back(&SearchEngine::indexing, this, site, true);
     }
+    for(auto& thread : threads) thread.join();
+    now_indexing = false;
     return {{"result", true}};
 }
 
 nlohmann::json SearchEngine::stopIndexing() {
+    nlohmann::json status;
     mutex.lock();
-    now_indexing = false;
+    if(now_indexing){
+        now_indexing = false;
+        status = {{"result", "stop"}};
+    } else{
+        status["result"] = "error";
+        status["error"] = "Нет запущенной индексации!";
+    }
     mutex.unlock();
-    nlohmann::json status = {{"result", "stop"}};
     return status;
 }
 

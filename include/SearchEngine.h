@@ -15,7 +15,7 @@ class SearchEngine{
     std::unordered_set<std::string> buffer_sites;           //сайты на индексацию
     Stemming stemming;                                      //стемминг слова
     SQL_database database;                                  //база данных
-    void indexing(std::string current_link);
+    void indexing(std::string current_link, bool single);
     void buffer_erase(std::string& current_link);           //удалить страницу из буфера
     void parsing(std::unordered_set<std::string>& worlds, const std::string& text, char symbol = '+');
 public:

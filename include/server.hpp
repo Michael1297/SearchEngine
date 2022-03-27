@@ -1,5 +1,4 @@
 #pragma once
-#include <iostream> //TODO del
 #include <functional>
 #include "Config.h"
 #include "SearchEngine.h"
@@ -20,7 +19,7 @@ public:
 };
 
 //https://oatpp.io/docs/start/step-by-step/
-void run_server(std::shared_ptr<SearchEngine> searchEngine) {
+void run_server(std::unique_ptr<SearchEngine>& searchEngine) {
 
     /* Create Router for HTTP requests routing */
     auto router = oatpp::web::server::HttpRouter::createShared();
@@ -28,7 +27,15 @@ void run_server(std::shared_ptr<SearchEngine> searchEngine) {
 
     /** Route GET - "/startIndexing" requests to Handler */
     router->route("GET", "/startIndexing", std::make_shared<Handler>([&searchEngine](const std::shared_ptr<Handler::IncomingRequest>& request){
-        return searchEngine->startIndexing().dump(1, '\t');
+        std::string tail = request->getPathTail();      /* get url 'tail' - everything that comes after '*' */
+        auto queryParams = oatpp::network::Url::Parser::parseQueryParams(tail);     /* parse query params from tail */
+        std::string queurls = queryParams.get("queurls").getValue("");
+        if(queurls.empty()){
+            return searchEngine->startIndexing().dump(1, '\t');
+        } else{
+            return searchEngine->startIndexing(queurls).dump(1, '\t');
+        }
+
     }));
 
     /** Route GET - "/stopIndexing" requests to Handler */

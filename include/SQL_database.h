@@ -6,15 +6,13 @@
 #include <nlohmann/json.hpp>
 
 class SQL_database{
-    std::string database_name;
     std::unique_ptr<nanodbc::connection> database;
     void general(std::unordered_set<int>& main, std::unordered_set<int>& other); //убрать из 1 массива уникальные значения
 public:
     SQL_database();
     void connection();  //подключение к бд
-    void create();  //создать бд
-    void drop();    //удалить бд
-    void use();     //использовать созданную бд
+    void create();  //создать таблицу
+    void drop(std::string table);    //удалить таблицу
     void insert_page(std::string path, int code, std::string content);  //добавить сайт в бд
     void insert_word(std::string value);    //добавить слово в бд
     void insert_search_index(int page_id, int word_id, float rank);
