@@ -4,11 +4,11 @@ Search engine on c++ (graduation work)
 
 # API
 * Поиск\
-`/search`?query=`<word1+word2+word3>`&limit=`<value>`&offset=`<value>`\
+`/search`?query=`<word1+word2+word3>`&limit=`<value>`&offset=`<value>`
 * Запуск индексации\
-`/startIndexing`?queurls=`<site1+site2+site3>`\
+`/startIndexing`?queurls=`<site1+site2+site3>`
 * Остановка индексации\
-`/stopIndexing`\
+`/stopIndexing`
 * Статус SQL базы данных\
 `/status`
 
