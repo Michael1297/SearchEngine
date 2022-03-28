@@ -12,12 +12,17 @@ Search engine on c++ (graduation work)
 * Статус SQL базы данных\
 `/status`
 
-# Minimal required build settings:
+# Build dependencies:
 * cmake 3.20
 * mingw 9.0 64-bit
 * C++ 17
 * PostgreSQL
 * PostgreSQL ODBC Driver
+
+# Getting the source
+```
+git clone --recurse-submodules https://github.com/Michael1297/SearchEngine.git
+```
 
 # Checklist:
 - [x] Реализован метод /api/startIndexing.
