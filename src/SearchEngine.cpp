@@ -64,7 +64,7 @@ void SearchEngine::indexing(std::string current_link, bool single){
 
     std::map<std::string, int> buffer_words;    //буфер слов
     html_parse.get_words([this, &buffer_words](std::string out){
-        buffer_words[stemming.word_stemming(out)]++;    //добавление слов в буфер
+        if(out = stemming.word_stemming(out); !out.empty()) buffer_words[out]++;    //добавление слов в буфер
     });
 
     //добавление слов в бд

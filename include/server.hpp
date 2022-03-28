@@ -69,7 +69,7 @@ void run_server(std::unique_ptr<SearchEngine>& searchEngine) {
     /* Create server which takes provided TCP connections and passes them to HTTP connection handler */
     oatpp::network::Server server(connectionProvider, connectionHandler);
 
-    /* Print info about server port */  //TODO del
+    /* Print info about server port */
     std::cout << "Server running on port " << connectionProvider->getProperty("port").toString().getValue("") << std::endl;
 
     /* Run server */

@@ -11,14 +11,6 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
 
-# Boost ============================================================
-set(Boost_INCLUDE_DIR "C:\\boost_1_77_0")
-set(Boost_LIBRARY_DIR "C:\\boost_1_77_0\\stage\\lib")
-find_package(Boost COMPONENTS REQUIRED)
-include_directories(${Boost_INCLUDE_DIR})
-link_directories(${Boost_LIBRARY_DIR})
-#===================================================================
-
 add_subdirectory(third_party/cpr)
 add_subdirectory(third_party/json)
 add_subdirectory(third_party)                           #gumbo-parser + ini parser
@@ -31,7 +23,6 @@ add_subdirectory(src)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE cpr::cpr)
 target_link_libraries(${PROJECT_NAME} PRIVATE nlohmann_json::nlohmann_json)
-target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} PRIVATE third_party_library)
 target_link_libraries(${PROJECT_NAME} PRIVATE oleanderstemminglibrary)
 target_link_libraries(${PROJECT_NAME} PRIVATE nanodbc "${ODBC_LINK_FLAGS}")

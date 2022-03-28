@@ -197,7 +197,7 @@ nlohmann::json SQL_database::search(std::unordered_set<std::string>& worlds) {
         relevance[id] = page_relevance;
     }
 
-    std::regex fragment_regex("(^|\\s)" + from_base64(minimum.first) + "($|\\s)", std::regex::icase);
+    minimum.first = from_base64(minimum.first);
 
     //добавление значений в json
     for(auto& id : minimum_page_id){
@@ -209,8 +209,10 @@ nlohmann::json SQL_database::search(std::unordered_set<std::string>& worlds) {
         GumboAPI html_parse(from_base64(result.get<std::string>("content")));
 
         html_parse.get_fragments([&](std::string fragment){      //получение фрагмента содержащего редкое слово
-            if(std::regex_search(fragment, fragment_regex)){
-                data[count]["snippet"] = std::regex_replace(fragment, fragment_regex, " <b>" + from_base64(minimum.first) + "</b> ");
+            if(auto find = fragment.find(minimum.first); find != std::string::npos){
+                fragment.insert(find + minimum.first.size(), "</b>");
+                fragment.insert(find, "<b>");
+                data[count]["snippet"] = fragment;
                 return;
             }
         });
