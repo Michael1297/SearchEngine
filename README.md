@@ -3,9 +3,13 @@
 Search engine on c++ (graduation work)
 
 # API
+* Поиск\
 `/search`?query=`<word1+word2+word3>`&limit=`<value>`&offset=`<value>`\
+* Запуск индексации\
 `/startIndexing`?queurls=`<site1+site2+site3>`\
+* Остановка индексации\
 `/stopIndexing`\
+* Статус SQL базы данных\
 `/status`
 
 # Minimal required build settings:
@@ -48,4 +52,4 @@ Search engine on c++ (graduation work)
 
 - [x] Проект выложен на GitHub со всеми необходимыми файлами для сборки.
 
-- [ ] В README описана команда, которой необходимо запускать приложение после сборки.
+- [x] В README описана команда, которой необходимо запускать приложение после сборки.

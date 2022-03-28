@@ -24,7 +24,7 @@ void SearchEngine::parsing(std::unordered_set<std::string>& worlds, const std::s
     while (true){
         std::string word;
         std::getline(parse, word, symbol);
-        if(!word.empty()){
+        if(!word.empty() && !stopWord.contains(word)){
             worlds.insert(stemming.word_stemming(word));
         } else break;
     }

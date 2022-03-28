@@ -7,6 +7,7 @@
 #include "HttpTool.h"
 #include "Stemming.h"
 #include "SQL_database.h"
+#include "StopWord.h"
 
 class SearchEngine{
     bool now_indexing = false;
@@ -14,6 +15,7 @@ class SearchEngine{
     HttpTool domain;
     Stemming stemming;                                      //стемминг слова
     SQL_database database;                                  //база данных
+    StopWord stopWord;                                      //стоп слова
     std::unordered_set<std::string> buffer_sites;           //сайты на индексацию
     void indexing(std::string current_link, bool single);
     void buffer_insert(std::string& link);                  //добавить страницу в буфер

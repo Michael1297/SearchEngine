@@ -31,3 +31,4 @@ target_link_libraries(${PROJECT_NAME} PRIVATE oatpp)
 
 #копирование файла
 configure_file(config.ini ${CMAKE_CURRENT_BINARY_DIR}/config.ini COPYONLY)
+configure_file(StopWordList.txt ${CMAKE_CURRENT_BINARY_DIR}/StopWordList.txt COPYONLY)
