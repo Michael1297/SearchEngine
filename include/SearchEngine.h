@@ -12,15 +12,15 @@
 class SearchEngine{
     bool now_indexing = false;
     std::mutex mutex;
-    HttpTool domain;
+    HttpTool domain;                                        //работа с адресом страницы
     Stemming stemming;                                      //стемминг слова
     SQL_database database;                                  //база данных
     StopWord stopWord;                                      //стоп слова
     std::unordered_set<std::string> buffer_sites;           //сайты на индексацию
-    void indexing(std::string current_link, bool single);
+    void indexing(std::string current_link, bool single);   //индексация
     void buffer_insert(std::string& link);                  //добавить страницу в буфер
     void buffer_erase(std::string& current_link);           //удалить страницу из буфера
-    void parsing(std::unordered_set<std::string>& worlds, const std::string& text, char symbol = '+');
+    void parsing(std::unordered_set<std::string>& worlds, const std::string& text, char symbol = '+');  //парсинг запроса
 public:
 
     nlohmann::json startIndexing();

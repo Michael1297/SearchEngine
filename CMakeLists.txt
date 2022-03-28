@@ -12,8 +12,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
 
 add_subdirectory(third_party/cpr)
-add_subdirectory(third_party/json)
-add_subdirectory(third_party)                           #gumbo-parser + ini parser
+add_subdirectory(third_party/json)                      #json библиотека
+add_subdirectory(third_party)                           #другие библиотеки, в которых не своего CMakeLists.txt файла
 add_subdirectory(third_party/OleanderStemmingLibrary)   #стимминг слов
 add_subdirectory(third_party/nanodbc)                   #управление SQL бд
 add_subdirectory(third_party/fmt)                       #Форматирование строк
@@ -29,6 +29,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE nanodbc "${ODBC_LINK_FLAGS}")
 target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt)
 target_link_libraries(${PROJECT_NAME} PRIVATE oatpp)
 
-#копирование файла
+#копирование файлов
 configure_file(config.ini ${CMAKE_CURRENT_BINARY_DIR}/config.ini COPYONLY)
 configure_file(StopWordList.txt ${CMAKE_CURRENT_BINARY_DIR}/StopWordList.txt COPYONLY)

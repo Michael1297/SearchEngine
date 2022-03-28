@@ -3,8 +3,8 @@
 #include <string>
 
 class StopWord{
-    std::unordered_set<std::string> words;
+    std::unordered_set<std::string> words;  //список стоп слов
 public:
     StopWord();
-    bool contains(std::string& word);
+    bool contains(std::string& word);       //проверка наличия стоп слова в массиве
 };

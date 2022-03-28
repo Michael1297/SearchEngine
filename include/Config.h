@@ -7,13 +7,13 @@ public:
     Config& operator=(const Config&) = delete;
     static Config& Instance();
     Config();
-    std::string driverSQL;
-    std::string serverSQL;
-    std::string portSQL;
-    std::string databaseSQL;
-    std::string loginSQL;
-    std::string passwordSQL;
-    std::string start_page;
-    std::string host;
-    std::string port;
+    std::string driverSQL;      //драйвер бд
+    std::string serverSQL;      //адрес бд
+    std::string portSQL;        //порт бд
+    std::string databaseSQL;    //название бд
+    std::string loginSQL;       //логин к бд
+    std::string passwordSQL;    //пароль к бд
+    std::string start_page;     //страница с которой начать индексацию
+    std::string host;           //адрес сервера
+    std::string port;           //порт сервера
 };
