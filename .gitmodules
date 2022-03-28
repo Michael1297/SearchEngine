@@ -9,7 +9,7 @@
 	url = https://github.com/libcpr/cpr.git
 [submodule "third_party/OleanderStemmingLibrary"]
 	path = third_party/OleanderStemmingLibrary
-	url = https://github.com/OleanderSoftware/OleanderStemmingLibrary.git
+	url = https://github.com/Michael1297/OleanderStemmingLibrary.git
 [submodule "third_party/nanodbc"]
 	path = third_party/nanodbc
 	url = https://github.com/nanodbc/nanodbc.git
