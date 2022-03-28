@@ -6,7 +6,7 @@
 class HttpTool{
     std::string domain;
     std::regex own_link_regex;
-    std::regex has_domain = std::regex(R"((^https?://|^)(www\.|)\S+\.\S+(/\S*$|$))", std::regex::icase);
+    std::regex has_domain = std::regex(R"((^https?://?|^)(www\.|)\S+\.\S+(/\S*$|$))", std::regex::icase);
     std::regex http_regex = std::regex("^https?://\\S+");
     std::regex www_regex = std::regex("^www\\.\\S+");
 

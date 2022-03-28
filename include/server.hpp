@@ -1,10 +1,11 @@
 #pragma once
 #include <functional>
+#include <iostream>
+#include <oatpp/web/server/HttpConnectionHandler.hpp>
+#include <oatpp/network/Server.hpp>
+#include <oatpp/network/tcp/server/ConnectionProvider.hpp>
 #include "Config.h"
 #include "SearchEngine.h"
-#include "oatpp/web/server/HttpConnectionHandler.hpp"
-#include "oatpp/network/Server.hpp"
-#include "oatpp/network/tcp/server/ConnectionProvider.hpp"
 
 class Handler : public oatpp::web::server::HttpRequestHandler {
     std::function<std::string(const std::shared_ptr<IncomingRequest>& request)> function_out;
@@ -20,7 +21,6 @@ public:
 
 //https://oatpp.io/docs/start/step-by-step/
 void run_server(std::unique_ptr<SearchEngine>& searchEngine) {
-
     /* Create Router for HTTP requests routing */
     auto router = oatpp::web::server::HttpRouter::createShared();
 
@@ -70,7 +70,7 @@ void run_server(std::unique_ptr<SearchEngine>& searchEngine) {
     oatpp::network::Server server(connectionProvider, connectionHandler);
 
     /* Print info about server port */  //TODO del
-    OATPP_LOGI("MyApp", "Server running on port %s", connectionProvider->getProperty("port").getData());
+    std::cout << "Server running on port " << connectionProvider->getProperty("port").toString().getValue("") << std::endl;
 
     /* Run server */
     server.run();

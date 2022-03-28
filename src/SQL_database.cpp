@@ -28,12 +28,10 @@ void SQL_database::connection() {
 }
 
 void SQL_database::create() {
-    try{        //удалить старые значения
-        this->drop("page");
-        this->drop("word");
-        this->drop("search_index");
-    }
-    catch (...) {}
+    //удалить старые таблицы
+    this->drop("page");
+    this->drop("word");
+    this->drop("search_index");
 
     std::string command = "CREATE TABLE page("
                           "id SERIAL NOT NULL PRIMARY KEY, "
@@ -63,7 +61,10 @@ void SQL_database::create() {
 
 void SQL_database::drop(std::string table) {
     std::string command = fmt::format("DROP TABLE {} CASCADE;", table);
-    execute(*database, NANODBC_TEXT(command));
+    try{
+        execute(*database, NANODBC_TEXT(command));
+    }
+    catch (...) {}  //если таблицы не существует
 }
 
 void SQL_database::insert_page(std::string path, int code, std::string content) {

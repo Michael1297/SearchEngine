@@ -1,6 +1,6 @@
 #include <HttpTool.h>
 #include "Exception.h"
-#include <Config.h>
+#include "Config.h"
 
 using namespace std::regex_constants;       // для флага icase - игнорирование регистра
 

@@ -28,7 +28,7 @@ Config::Config() {
     passwordSQL = config[ConfigSQL]["password"];
     if(passwordSQL.empty()) throw Exception("Invalid config file");
 
-    start_page = config[ConfigSQL]["start_page"];
+    start_page = config[ConfigServer]["start_page"];
     if(start_page.empty()) throw Exception("Invalid config file");
 
     host = config[ConfigServer]["host"];
