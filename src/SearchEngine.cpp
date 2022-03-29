@@ -49,10 +49,13 @@ void SearchEngine::indexing(std::string current_link, bool single){
     GumboAPI html_parse(r.text);                   //парсинг страницы
 
     mutex.lock();
-    bool now_index = now_indexing;
+    if(!now_indexing){
+        mutex.unlock();
+        return;
+    }
     mutex.unlock();
 
-    if(!single && now_index) {
+    if(!single) {   //полная индексация
         std::vector<std::thread> threads;
         html_parse.get_links([this, &threads](std::string links){     //получить ссылки со страницы
             if(domain.is_ownLink(links)) {     //игнорировать ссылки сторонних сайтов
@@ -74,8 +77,10 @@ void SearchEngine::indexing(std::string current_link, bool single){
     //добавление слов в бд
     for(auto& word : buffer_words){
         mutex.lock();   //мьютекс требуется, чтобы не появились дубликаты
-        if(!now_indexing) break;
-        if(auto word_id = database.word_id(word.first); word_id > 0){   //слово присутствует в бд
+        if(!now_indexing) {     //остановка индексации
+            mutex.unlock();
+            return;
+        } else if(auto word_id = database.word_id(word.first); word_id > 0){   //слово присутствует в бд
             database.update_word(word.first);   //увеличить frequency на 1 в бд
             database.insert_search_index(page_id, word_id, word.second);
         } else{
@@ -95,6 +100,7 @@ nlohmann::json SearchEngine::startIndexing() {
     }
 
     now_indexing = true;
+    buffer_sites.clear();
     database.create();
 
     this->indexing(Config::Instance().start_page, false);

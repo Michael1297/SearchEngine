@@ -79,7 +79,7 @@ int SQL_database::page_id(std::string path) {
     if(result.next()) {
         return result.get<int>("id");
     } else {
-        return 0;
+        return 0;   //не найдено
     }
 }
 
@@ -94,7 +94,7 @@ int SQL_database::word_id(std::string value) {
     if(result.next()) {
         return result.get<int>("id");
     } else {
-        return 0;
+        return 0;   //не найдено
     }
 }
 
@@ -179,8 +179,8 @@ nlohmann::json SQL_database::search(std::unordered_set<std::string>& worlds) {
     //поиск общих ссылок всех слов
     for(auto& world : worlds){
         std::string base64_world = to_base64(world);
-        if(base64_world == minimum.first) continue;
-        std::unordered_set<int> others_page_id;
+        if(base64_world == minimum.first) continue;     //minimum не нужно обрабатывать
+        std::unordered_set<int> others_page_id;     //page_id слов != minimum
         std::string command = fmt::format(R"(SELECT page_id FROM word JOIN search_index ON word.id = search_index.word_id WHERE value='{}';)", base64_world);
         auto result = execute(*database, NANODBC_TEXT(command));
         while (result.next()) others_page_id.insert(result.get<int>("page_id"));   //добавление page_id в массив others_page_id
@@ -198,7 +198,6 @@ nlohmann::json SQL_database::search(std::unordered_set<std::string>& worlds) {
         relevance[id] = page_relevance;
     }
 
-    minimum.first = from_base64(minimum.first);
     Stemming stemming;
 
     //добавление значений в json

@@ -25,8 +25,8 @@ void run_server(std::unique_ptr<SearchEngine>& searchEngine) {
     auto router = oatpp::web::server::HttpRouter::createShared();
 
 
-    /** Route POST - "/startIndexing" requests to Handler */
-    router->route("POST", "/startIndexing", std::make_shared<Handler>([&searchEngine](const std::shared_ptr<Handler::IncomingRequest>& request){
+    /** Route GET - "/startIndexing" requests to Handler */
+    router->route("GET", "/startIndexing", std::make_shared<Handler>([&searchEngine](const std::shared_ptr<Handler::IncomingRequest>& request){
         std::string tail = request->getPathTail();      /* get url 'tail' - everything that comes after '*' */
         auto queryParams = oatpp::network::Url::Parser::parseQueryParams(tail);     /* parse query params from tail */
         std::string queurls = queryParams.get("queurls").getValue("");
@@ -35,11 +35,10 @@ void run_server(std::unique_ptr<SearchEngine>& searchEngine) {
         } else{
             return searchEngine->startIndexing(queurls).dump(1, '\t');
         }
-
     }));
 
-    /** Route POST - "/stopIndexing" requests to Handler */
-    router->route("POST", "/stopIndexing", std::make_shared<Handler>([&searchEngine](const std::shared_ptr<Handler::IncomingRequest>& request){
+    /** Route GET - "/stopIndexing" requests to Handler */
+    router->route("GET", "/stopIndexing", std::make_shared<Handler>([&searchEngine](const std::shared_ptr<Handler::IncomingRequest>& request){
         return searchEngine->stopIndexing().dump(1, '\t');
     }));
 
