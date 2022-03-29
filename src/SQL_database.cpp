@@ -5,6 +5,7 @@
 #include "Config.h"
 #include "Exception.h"
 #include "GumboAPI.h"
+#include "Stemming.h"
 
 using namespace base64;
 
@@ -198,10 +199,11 @@ nlohmann::json SQL_database::search(std::unordered_set<std::string>& worlds) {
     }
 
     minimum.first = from_base64(minimum.first);
+    Stemming stemming;
 
     //добавление значений в json
     for(auto& id : minimum_page_id){
-        auto count = data.size();
+        auto position = data.size();
 
         std::string command = fmt::format("SELECT content, path FROM page WHERE id={};", id);
         auto result = execute(*database, NANODBC_TEXT(command));
@@ -209,17 +211,23 @@ nlohmann::json SQL_database::search(std::unordered_set<std::string>& worlds) {
         GumboAPI html_parse(from_base64(result.get<std::string>("content")));
 
         html_parse.get_fragments([&](std::string fragment){      //получение фрагмента содержащего редкое слово
-            if(auto find = fragment.find(minimum.first); find != std::string::npos){
-                fragment.insert(find + minimum.first.size(), "</b>");
-                fragment.insert(find, "<b>");
-                data[count]["snippet"] = fragment;
-                return;
+            std::stringstream text;
+            text << fragment;
+            while(true){                //парсинг фрагмент
+                std::string word;
+                text >> word;
+                if(word.empty()) break;  //если фрагмент закончился
+                else if(worlds.count(stemming.word_stemming(word))){     //если найденное слово находится среди слов, заданных в поиске
+                    fragment.insert(fragment.find(word) + word.size(), "</b>"); //вставка </b> в конец слова во фрагменте
+                    fragment.insert(fragment.find(word), "<b>");    //вставка <b> в начало слова во фрагменте
+                    data[position]["snippet"] = fragment;
+                    return; //выход их лямбда функции
+                }
             }
         });
-
-        data[count]["title"] = html_parse.find_title();
-        data[count]["uri"] = from_base64(result.get<std::string>("path"));
-        data[count]["relevance"] = relevance[id] / total_relevance;
+        data[position]["title"] = html_parse.find_title();
+        data[position]["uri"] = from_base64(result.get<std::string>("path"));
+        data[position]["relevance"] = relevance[id] / total_relevance;
     }
 
     //сортировка json по значению relevance

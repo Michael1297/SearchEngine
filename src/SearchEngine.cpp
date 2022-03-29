@@ -18,14 +18,18 @@ void SearchEngine::buffer_insert(std::string& link) {
     mutex.unlock();
 }
 
-void SearchEngine::parsing(std::unordered_set<std::string>& worlds, const std::string& text, char symbol) {
+void SearchEngine::parsing(std::unordered_set<std::string>& worlds, const std::string& text, bool is_word) {
     std::stringstream parse;
     parse << text;
     while (true){
         std::string word;
-        std::getline(parse, word, symbol);
-        if(!word.empty() && !stopWord.contains(word)){
-            worlds.insert(stemming.word_stemming(word));
+        std::getline(parse, word, '+');
+        if(!word.empty()){
+            if(is_word){    //список слов
+                if(!stopWord.contains(word)) worlds.insert(stemming.word_stemming(word));    //добавить слово в массив
+            } else{     //список сайтов
+                worlds.insert(word);    //добавить сайт в массив
+            }
         } else break;
     }
 }
@@ -108,7 +112,7 @@ nlohmann::json SearchEngine::startIndexing(std::string queurls) {
     }
 
     std::unordered_set<std::string> sites;
-    this->parsing(sites, queurls);
+    this->parsing(sites, queurls, false);
     now_indexing = true;
     std::vector<std::thread> threads;
     for(auto site : sites){
@@ -160,7 +164,7 @@ nlohmann::json SearchEngine::search(std::string query, int offset, int limit) {
     }
     while(query.front() == '+' && !query.empty()) query.erase(query.begin()); //добавлено на случай если запрос некорректный и 1 символом будет +
     std::unordered_set<std::string> worlds;
-    this->parsing(worlds, query);
+    this->parsing(worlds, query, true);
 
     auto search_result = database.search(worlds);
 

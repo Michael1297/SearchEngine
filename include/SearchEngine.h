@@ -20,7 +20,7 @@ class SearchEngine{
     void indexing(std::string current_link, bool single);   //индексация
     void buffer_insert(std::string& link);                  //добавить страницу в буфер
     void buffer_erase(std::string& current_link);           //удалить страницу из буфера
-    void parsing(std::unordered_set<std::string>& worlds, const std::string& text, char symbol = '+');  //парсинг запроса
+    void parsing(std::unordered_set<std::string>& worlds, const std::string& text, bool is_word);  //парсинг запроса
 public:
 
     nlohmann::json startIndexing();
