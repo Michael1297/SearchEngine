@@ -119,15 +119,16 @@ nlohmann::json SearchEngine::startIndexing(std::string queurls) {
     std::unordered_set<std::string> sites;
     this->parsing(sites, queurls, false);
     now_indexing = true;
-    ThreadPool thread_pool(std::thread::hardware_concurrency());
+    auto* thread_pool = new ThreadPool(std::thread::hardware_concurrency());
 
     for(auto site : sites){
         if(domain.is_ownLink(site)){    //индексировать только страницы принадлежащие сайту
             database.erase_page(domain.getPath(site));  //удалить страницу из бд
-            thread_pool.enqueue(&SearchEngine::indexing, this, site, true, &thread_pool);
+            thread_pool->enqueue(&SearchEngine::indexing, this, site, true, thread_pool);
         }
     }
 
+    delete thread_pool;
     now_indexing = false;
     return {{"result", true}};
 }
