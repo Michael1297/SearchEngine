@@ -7,7 +7,7 @@ class HttpTool{
     std::string domain;
     std::regex own_link_regex;  //ссылка принадлежит домену
     std::regex has_domain = std::regex(R"((^https?://?|^)(www\.|)\S+\.\S+(/\S*$|$))", std::regex::icase);   //наличие ссылки
-    std::regex front_url = std::regex("^https?://?(www\\.|)|^www\\.");
+    std::regex front_url = std::regex(R"(^https?://?(www\.|)|^www\.)", std::regex::icase);
 
 public:
     HttpTool();
