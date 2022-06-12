@@ -12,14 +12,8 @@ HttpTool::HttpTool(){
 }
 
 std::string HttpTool::getDomain(std::string link) {
-    if(std::regex_match(link, http_regex)){       //убирает http://
-        link.erase(link.begin(), link.begin() + link.find("//") + 2);
-    }
-    if(link.empty()) throw Exception("Invalid link");
+    link = std::regex_replace(link, front_url, "");
 
-    if(std::regex_match(link, www_regex)){       //убирает www.
-        link.erase(link.begin(), link.begin() + 4);
-    }
     if(link.empty()) throw Exception("Invalid link");
 
     if(auto find = link.find('/'); find != std::string::npos){
@@ -45,10 +39,10 @@ void HttpTool::escape(std::string& text, char symbol) { //экранирован
 bool HttpTool::is_ownLink(std::string& link) {
     if(std::regex_match(link, own_link_regex)){
         return true;
-    } else if(link.front() == '/'){     //ссылка без домена, начинающиеся с /
+    } else if(link.front() == '/'){     //ссылка без домена, начинающиеся с '/'
         link = "https://" + domain + link;
         return true;
-    } else if(!std::regex_match(link, has_domain)){     //ссылка без домена, не начинающиеся с /
+    } else if(!std::regex_match(link, has_domain)){     //ссылка без домена, не начинающиеся с '/'
         link = "https://" + domain + "/" + link;
         return true;
     } else{

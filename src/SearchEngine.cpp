@@ -18,19 +18,18 @@ void SearchEngine::buffer_insert(std::string& link) {
     mutex.unlock();
 }
 
-void SearchEngine::parsing(std::unordered_set<std::string>& worlds, const std::string& text, bool is_word) {
-    std::stringstream parse;
-    parse << text;
-    while (true){
+void SearchEngine::parsing(std::unordered_set<std::string>& worlds, std::string text, bool is_word) {
+    text = std::regex_replace(text, std::regex("\\++"), " ");
+    std::stringstream parse(text);
+
+    while (!parse.eof()){
         std::string word;
-        std::getline(parse, word, '+');
-        if(!word.empty()){
-            if(is_word){    //список слов
-                if(!stopWord.contains(word)) worlds.insert(stemming.word_stemming(word));    //добавить слово в массив
-            } else{     //список сайтов
-                worlds.insert(word);    //добавить сайт в массив
-            }
-        } else break;
+        parse >> word;
+        if(is_word){    //список слов
+            if(!stopWord.contains(word)) worlds.insert(stemming.word_stemming(word));    //добавить слово в массив
+        } else{     //список сайтов
+            worlds.insert(word);    //добавить сайт в массив
+        }
     }
 }
 
