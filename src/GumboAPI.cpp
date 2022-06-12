@@ -36,12 +36,10 @@ void GumboAPI::get_fragments(std::function<void(std::string)> function, GumboNod
 
 void GumboAPI::get_words(std::function<void(std::string)> function) {
     this->get_fragments([&function](std::string out){
-        std::stringstream text;
-        text << out;
-        while(true){                //парсинг текста
+        std::stringstream text(out);
+        while(!text.eof()){                //парсинг текста
             std::string out;
             text >> out;
-            if(out.empty()) break;  //если текст закончился
             function(out);     //вывод слов
         }
     });

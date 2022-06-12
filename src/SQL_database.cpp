@@ -152,7 +152,7 @@ nlohmann::json SQL_database::search(std::unordered_set<std::string>& worlds) {
     if(relevance.empty()) return {};    //слова не найдены в бд
 
     //страница с максимальной релевантностью
-    auto max_relevance = std::max_element(relevance.begin(), relevance.end(), [](std::pair<int, float> first, std::pair<int, float> second){
+    auto max_relevance = std::max_element(relevance.begin(), relevance.end(), [](std::pair<const int, float>& first, std::pair<const int, float>& second){
         return first.second < second.second;
     });
 
