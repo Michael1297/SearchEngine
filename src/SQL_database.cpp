@@ -13,6 +13,10 @@ SQL_database::SQL_database() {
     this->connection();     //подключиться к бд
 }
 
+SQL_database::~SQL_database(){
+    database->disconnect();
+}
+
 void SQL_database::connection() {
     //строка подключения к бд
     //  Driver={<driver name>};Server=<server>;Database=<database>;UID=<user id>;PWD=<password>
@@ -131,92 +135,43 @@ int SQL_database::size(std::string table) {
     return result.get<int>("count");
 }
 
-void SQL_database::general(std::unordered_set<int>& main, std::unordered_set<int>& other) {
-    for(auto& single : main){
-        if(!other.count(single)) main.erase(single);
-    }
-}
-
-float SQL_database::get_relevance(int page_id, std::string world) {
-    std::string command = fmt::format("SELECT rank FROM word JOIN search_index ON word.id = search_index.word_id "
-                                      "WHERE page_id={} AND value=\'{}\';", page_id, to_base64(world));
-    auto result = execute(*database, NANODBC_TEXT(command));
-    if(result.next()){
-        return result.get<float>("rank");
-    } else{
-        return 0;
-    }
-}
-
 nlohmann::json SQL_database::search(std::unordered_set<std::string>& worlds) {
     nlohmann::json data;
-    std::pair<std::string, int> minimum = {"", 0}; //используется для хранения минимального value + frequency
-
-    //поиск минимального value и frequency
-    for(auto& world : worlds) {
-        std::string command = fmt::format(R"(SELECT value, frequency FROM word WHERE value='{}';)", to_base64(world));
-        auto result = execute(*database, NANODBC_TEXT(command));
-
-        if(result.next()) {
-            if(minimum.first.empty() || minimum.second > result.get<int>("frequency")){ //добавляем 1 значение или меняем если frequency меньше
-                minimum.first = result.get<std::string>("value");
-                minimum.second = result.get<int>("frequency");
-            }
-        } else{
-            worlds.erase(world);    //слово не найдено в бд
-        }
-    }
-
-    if(minimum.first.empty()) return {};    //слова не найдены в бд
-
-    std::unordered_set<int> minimum_page_id;    //page_id минимального слова
-    {
-        std::string command = fmt::format(R"(SELECT page_id FROM word JOIN search_index ON word.id = search_index.word_id WHERE value='{}';)", minimum.first);
-        auto result = execute(*database, NANODBC_TEXT(command));
-        while (result.next()) minimum_page_id.insert(result.get<int>("page_id"));   //добавление page_id в массив page_id
-    }
-
-    //поиск общих ссылок всех слов
-    for(auto& world : worlds){
-        std::string base64_world = to_base64(world);
-        if(base64_world == minimum.first) continue;     //minimum не нужно обрабатывать
-        std::unordered_set<int> others_page_id;     //page_id слов != minimum
-        std::string command = fmt::format(R"(SELECT page_id FROM word JOIN search_index ON word.id = search_index.word_id WHERE value='{}';)", base64_world);
-        auto result = execute(*database, NANODBC_TEXT(command));
-        while (result.next()) others_page_id.insert(result.get<int>("page_id"));   //добавление page_id в массив others_page_id
-        this->general(minimum_page_id, others_page_id); //удалить из 1 массива id, не найденные во 2 массива
-    }
-
-    float total_relevance = 0;      //максимальная абсолютная релевантность
     std::map<int, float> relevance; //релевантность для конкретной страницы
-    for(auto& id : minimum_page_id){    //вычисление релевантности
-        float page_relevance = 0;
-        for(auto& world : worlds) {
-            page_relevance += this->get_relevance(id, world);
+
+    //поиск страниц на которых встречается слово
+    for(auto& world : worlds) {
+        std::string command = fmt::format(R"(SELECT page_id, rank FROM search_index JOIN word ON word.id = search_index.word_id WHERE value = '{}';)",
+                                          to_base64(world));
+        auto result = execute(*database, NANODBC_TEXT(command));
+        while (result.next()){
+            relevance[result.get<int>("page_id")] += result.get<float>("rank");
         }
-        total_relevance += page_relevance;
-        relevance[id] = page_relevance;
     }
+
+    if(relevance.empty()) return {};    //слова не найдены в бд
+
+    //страница с максимальной релевантностью
+    auto max_relevance = std::max_element(relevance.begin(), relevance.end(), [](std::pair<int, float> first, std::pair<int, float> second){
+        return first.second < second.second;
+    });
 
     Stemming stemming;
-
     //добавление значений в json
-    for(auto& id : minimum_page_id){
+    for(auto& page_relevance : relevance){
         auto position = data.size();
 
-        std::string command = fmt::format("SELECT content, path FROM page WHERE id={};", id);
+        std::string command = fmt::format("SELECT content, path FROM page WHERE id={};", page_relevance.first);
         auto result = execute(*database, NANODBC_TEXT(command));
         result.next();
         GumboAPI html_parse(from_base64(result.get<std::string>("content")));
 
         html_parse.get_fragments([&](std::string fragment){      //получение фрагмента содержащего редкое слово
-            std::stringstream text;
-            text << fragment;
-            while(true){                //парсинг фрагмент
+            std::stringstream text(fragment);
+            while(!text.eof()){                //парсинг фрагмент
                 std::string word;
                 text >> word;
-                if(word.empty()) break;  //если фрагмент закончился
-                else if(worlds.count(stemming.word_stemming(word))){     //если найденное слово находится среди слов, заданных в поиске
+                if(worlds.count(stemming.word_stemming(word))){     //если найденное слово находится среди слов, заданных в поиске
                     fragment.insert(fragment.find(word) + word.size(), "</b>"); //вставка </b> в конец слова во фрагменте
                     fragment.insert(fragment.find(word), "<b>");    //вставка <b> в начало слова во фрагменте
                     data[position]["snippet"] = fragment;
@@ -226,7 +181,7 @@ nlohmann::json SQL_database::search(std::unordered_set<std::string>& worlds) {
         });
         data[position]["title"] = html_parse.find_title();
         data[position]["uri"] = from_base64(result.get<std::string>("path"));
-        data[position]["relevance"] = relevance[id] / total_relevance;
+        data[position]["relevance"] = page_relevance.second / max_relevance->second;
     }
 
     //сортировка json по значению relevance
