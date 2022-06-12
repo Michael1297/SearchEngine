@@ -3,6 +3,7 @@
 #include <mutex>
 #include <unordered_set>
 #include <nlohmann/json.hpp>
+#include <ThreadPool/ThreadPool.h>
 #include "GumboAPI.h"
 #include "HttpTool.h"
 #include "Stemming.h"
@@ -17,7 +18,7 @@ class SearchEngine{
     SQL_database database;                                  //база данных
     StopWord stopWord;                                      //стоп слова
     std::unordered_set<std::string> buffer_sites;           //сайты на индексацию
-    void indexing(std::string current_link, bool single);   //индексация
+    void indexing(std::string current_link, bool single, ThreadPool* thread_pool);   //индексация
     void buffer_insert(std::string& link);                  //добавить страницу в буфер
     void buffer_erase(std::string& current_link);           //удалить страницу из буфера
     void parsing(std::unordered_set<std::string>& worlds, std::string text, bool is_word);  //парсинг запроса

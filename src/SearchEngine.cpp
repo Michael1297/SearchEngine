@@ -3,7 +3,6 @@
 #include <vector>
 #include <map>
 #include <cpr/cpr.h>
-#include <ThreadPool/ThreadPool.h>
 #include "GumboAPI.h"
 #include "Config.h"
 
@@ -34,7 +33,7 @@ void SearchEngine::parsing(std::unordered_set<std::string>& worlds, std::string 
     }
 }
 
-void SearchEngine::indexing(std::string current_link, bool single){
+void SearchEngine::indexing(std::string current_link, bool single, ThreadPool* thread_pool){
     cpr::Response r = cpr::Get(cpr::Url(current_link));
     if(r.status_code == 404 || r.status_code == 500){
         database.insert_page(domain.getPath(current_link), r.status_code, "");     //добавить страницу в бд
@@ -56,13 +55,12 @@ void SearchEngine::indexing(std::string current_link, bool single){
     mutex.unlock();
 
     if(!single) {   //полная индексация
-        ThreadPool thread_pool(std::thread::hardware_concurrency());
         html_parse.get_links([this, &thread_pool](std::string links){     //получить ссылки со страницы
             if(domain.is_ownLink(links)) {     //игнорировать ссылки сторонних сайтов
                 //индексировать если страницы нет в бд
                 if(database.page_id(domain.getPath(links)) == 0 && !buffer_sites.count(links)) {
                     this->buffer_insert(links);
-                    thread_pool.enqueue(&SearchEngine::indexing, this, links, false);
+                    thread_pool->enqueue(&SearchEngine::indexing, this, links, false, thread_pool);
                 }
             }
         });
@@ -102,7 +100,9 @@ nlohmann::json SearchEngine::startIndexing() {
     buffer_sites.clear();
     database.create();
 
-    this->indexing(Config::Instance().start_page, false);
+    auto* thread_pool = new ThreadPool(std::thread::hardware_concurrency());
+    this->indexing(Config::Instance().start_page, false, thread_pool);
+    delete thread_pool;
 
     now_indexing = false;
     return {{"result", true}};
@@ -124,7 +124,7 @@ nlohmann::json SearchEngine::startIndexing(std::string queurls) {
     for(auto site : sites){
         if(domain.is_ownLink(site)){    //индексировать только страницы принадлежащие сайту
             database.erase_page(domain.getPath(site));  //удалить страницу из бд
-            thread_pool.enqueue(&SearchEngine::indexing, this, site, true);
+            thread_pool.enqueue(&SearchEngine::indexing, this, site, true, &thread_pool);
         }
     }
 
