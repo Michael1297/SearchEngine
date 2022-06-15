@@ -164,16 +164,19 @@ nlohmann::json SQL_database::search(std::unordered_set<std::string>& worlds) {
     });
 
     auto* thread_pool = new ThreadPool(std::thread::hardware_concurrency());
+    int position = -1;
     std::mutex mutex;
     Stemming stemming;
 
     //добавление значений в json
-    for(int page_id = 0; page_id < relevance.size(); page_id++){
-        thread_pool->enqueue([&, page_id](){
-            std::string command = fmt::format("SELECT content, path FROM page WHERE id={};", page_id);
+    for(auto& page_relevance : relevance){
+        position++;
+        thread_pool->enqueue([&, position, page_relevance](){
+            std::string command = fmt::format("SELECT content, path FROM page WHERE id={};", page_relevance.first);
             auto result = execute(*database, command);
             result.next();
             GumboAPI html_parse(from_base64(result.get<std::string>("content")));
+
             //получение фрагмента содержащего редкое слово
             html_parse.get_fragments([&](std::string fragment){
                 std::stringstream text(fragment);
@@ -185,7 +188,7 @@ nlohmann::json SQL_database::search(std::unordered_set<std::string>& worlds) {
                         fragment.insert(find + word.size(), "</b>"); //вставка </b> в конец слова во фрагменте
                         fragment.insert(find, "<b>");    //вставка <b> в начало слова во фрагменте
                         mutex.lock();
-                        data[page_id]["snippet"] = fragment;
+                        data[position]["snippet"] = fragment;
                         mutex.unlock();
                         return; //выход их лямбда функции
                     }
@@ -193,9 +196,9 @@ nlohmann::json SQL_database::search(std::unordered_set<std::string>& worlds) {
             });
 
             mutex.lock();
-            data[page_id]["title"] = html_parse.find_title();
-            data[page_id]["uri"] = from_base64(result.get<std::string>("path"));
-            data[page_id]["relevance"] = relevance[page_id] / max_relevance->second;
+            data[position]["title"] = html_parse.find_title();
+            data[position]["uri"] = from_base64(result.get<std::string>("path"));
+            data[position]["relevance"] = page_relevance.second / max_relevance->second;
             mutex.unlock();
         });
     }
