@@ -9,9 +9,8 @@ class SQL_database{
     std::unique_ptr<nanodbc::connection> database;
 
 public:
-    SQL_database();
+    SQL_database();  //подключение к бд
     ~SQL_database();
-    void connection();  //подключение к бд
     void create();      //создать таблицу
     void drop(std::string table);           //удалить таблицу
     void insert_page(std::string path, int code, std::string content);  //добавить сайт в бд

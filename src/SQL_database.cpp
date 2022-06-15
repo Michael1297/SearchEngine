@@ -1,5 +1,5 @@
 #include "SQL_database.h"
-#include <regex>
+#include <unordered_set>
 #include <fmt/core.h>
 #include <base64/include/base64.hpp>    //base64 требуется из-за проблем при добавлении текста
 #include "Config.h"
@@ -9,15 +9,7 @@
 
 using namespace base64;
 
-SQL_database::SQL_database() {
-    this->connection();     //подключиться к бд
-}
-
-SQL_database::~SQL_database(){
-    database->disconnect();
-}
-
-void SQL_database::connection() {
+SQL_database::SQL_database() {   //подключиться к бд
     //строка подключения к бд
     //  Driver={<driver name>};Server=<server>;Database=<database>;UID=<user id>;PWD=<password>
     std::string connection_string = fmt::format("Driver={};Server={};Database={};Port={};UID={};PWD={};",
@@ -25,11 +17,25 @@ void SQL_database::connection() {
                                                 Config::Instance().databaseSQL, Config::Instance().portSQL,
                                                 Config::Instance().loginSQL, Config::Instance().passwordSQL);
     try{
-        database = std::make_unique<nanodbc::connection>(NANODBC_TEXT(connection_string));
+        database = std::make_unique<nanodbc::connection>(connection_string);
     }
     catch (...){
         throw Exception("Failed to connect to database");   //не удалось подключиться к бд
     }
+
+    //проверка на наличие таблиц в бд
+    std::unordered_set<std::string> tables;
+    std::string command = "SELECT table_name FROM information_schema.tables WHERE table_schema=\'public\';";
+    auto result = execute(*database, command);
+    while (result.next()){
+        tables.insert(result.get<std::string>("table_name"));
+    }
+    //если таблицы не существуют, то создать заново
+    if(tables.size() != 3 || !tables.count("page") || !tables.count("word") || !tables.count("search_index")) this->create();
+}
+
+SQL_database::~SQL_database(){
+    database->disconnect();
 }
 
 void SQL_database::create() {
@@ -44,14 +50,14 @@ void SQL_database::create() {
                           "code INT NOT NULL, "         //код ответа, полученный при запросе страницы
                           "content TEXT NOT NULL"       //контент страницы (HTML-код)
                           ");";
-    execute(*database, NANODBC_TEXT(command));
+    execute(*database, command);
 
     command = "CREATE TABLE word("
               "id SERIAL NOT NULL PRIMARY KEY, "
               "value TEXT NOT NULL, "       //нормальная форма слова
               "frequency INT NOT NULL"      //количество страниц, на которых слово встречается хотя бы один раз
               ");";
-    execute(*database, NANODBC_TEXT(command));
+    execute(*database, command);
 
     command = "CREATE TABLE search_index("
               "id SERIAL NOT NULL PRIMARY KEY, "
@@ -61,25 +67,25 @@ void SQL_database::create() {
               "FOREIGN KEY (page_id) references page(id) ON DELETE CASCADE, "
               "FOREIGN KEY (word_id) references word(id) ON DELETE CASCADE"
               ");";
-    execute(*database, NANODBC_TEXT(command));
+    execute(*database, command);
 }
 
 void SQL_database::drop(std::string table) {
     std::string command = fmt::format("DROP TABLE {} CASCADE;", table);
     try{
-        execute(*database, NANODBC_TEXT(command));
+        execute(*database, command);
     }
     catch (...) {}  //если таблицы не существует
 }
 
 void SQL_database::insert_page(std::string path, int code, std::string content) {
     std::string command = fmt::format(R"(INSERT INTO page(path, code, content) VALUES('{}', {}, '{}');)", to_base64(path), code, to_base64(content));
-    execute(*database, NANODBC_TEXT(command));
+    execute(*database, command);
 }
 
 int SQL_database::page_id(std::string path) {
     std::string command = fmt::format(R"(SELECT id FROM page WHERE path='{}' LIMIT 1;)", to_base64(path));
-    auto result = execute(*database, NANODBC_TEXT(command));
+    auto result = execute(*database, command);
     if(result.next()) {
         return result.get<int>("id");
     } else {
@@ -89,12 +95,12 @@ int SQL_database::page_id(std::string path) {
 
 void SQL_database::insert_word(std::string value) {
     std::string command = fmt::format(R"(INSERT INTO word(value, frequency) VALUES ('{}', 1);)", to_base64(value));
-    execute(*database, NANODBC_TEXT(command));
+    execute(*database, command);
 }
 
 int SQL_database::word_id(std::string value) {
     std::string command = fmt::format(R"(SELECT id FROM word WHERE value='{}' LIMIT 1;)", to_base64(value));
-    auto result = execute(*database, NANODBC_TEXT(command));
+    auto result = execute(*database, command);
     if(result.next()) {
         return result.get<int>("id");
     } else {
@@ -104,12 +110,12 @@ int SQL_database::word_id(std::string value) {
 
 void SQL_database::update_word(std::string value) {
     std::string command = fmt::format(R"(UPDATE word SET frequency=frequency+1 WHERE value='{}';)", to_base64(value));
-    execute(*database, NANODBC_TEXT(command));
+    execute(*database, command);
 }
 
 void SQL_database::insert_search_index(int page_id, int word_id, float rank) {
     std::string command = fmt::format(R"(INSERT INTO search_index(page_id, word_id, rank) VALUES ({}, {}, {});)", page_id, word_id, rank);
-    execute(*database, NANODBC_TEXT(command));
+    execute(*database, command);
 }
 
 void SQL_database::erase_page(std::string path) {
@@ -117,20 +123,20 @@ void SQL_database::erase_page(std::string path) {
     //уменьшить значение frequency на 1
     std::string command = fmt::format("UPDATE word SET frequency=frequency-1 FROM search_index, page "
                                       "WHERE word.id=search_index.word_id AND page.id=search_index.page_id AND page.path='{}';", path);
-    execute(*database, NANODBC_TEXT(command));
+    execute(*database, command);
 
     //удалить word где frequency < 1
     command = "DELETE FROM word WHERE frequency < 1;";
-    execute(*database, NANODBC_TEXT(command));
+    execute(*database, command);
 
     //удалить страницу
     command = fmt::format("DELETE FROM page WHERE path=\'{}\';", path);
-    execute(*database, NANODBC_TEXT(command));
+    execute(*database, command);
 }
 
 int SQL_database::size(std::string table) {
     std::string command = fmt::format("SELECT count(*) from {};", table);
-    auto result = execute(*database, NANODBC_TEXT(command));
+    auto result = execute(*database, command);
     result.next();
     return result.get<int>("count");
 }
@@ -143,7 +149,7 @@ nlohmann::json SQL_database::search(std::unordered_set<std::string>& worlds) {
     for(auto& world : worlds) {
         std::string command = fmt::format(R"(SELECT page_id, rank FROM search_index JOIN word ON word.id = search_index.word_id WHERE value = '{}';)",
                                           to_base64(world));
-        auto result = execute(*database, NANODBC_TEXT(command));
+        auto result = execute(*database, command);
         while (result.next()){
             relevance[result.get<int>("page_id")] += result.get<float>("rank");
         }
@@ -162,7 +168,7 @@ nlohmann::json SQL_database::search(std::unordered_set<std::string>& worlds) {
         auto position = data.size();
 
         std::string command = fmt::format("SELECT content, path FROM page WHERE id={};", page_relevance.first);
-        auto result = execute(*database, NANODBC_TEXT(command));
+        auto result = execute(*database, command);
         result.next();
         GumboAPI html_parse(from_base64(result.get<std::string>("content")));
 
@@ -172,8 +178,9 @@ nlohmann::json SQL_database::search(std::unordered_set<std::string>& worlds) {
                 std::string word;
                 text >> word;
                 if(worlds.count(stemming.word_stemming(word))){     //если найденное слово находится среди слов, заданных в поиске
-                    fragment.insert(fragment.find(word) + word.size(), "</b>"); //вставка </b> в конец слова во фрагменте
-                    fragment.insert(fragment.find(word), "<b>");    //вставка <b> в начало слова во фрагменте
+                    auto find = fragment.find(word);
+                    fragment.insert(find + word.size(), "</b>"); //вставка </b> в конец слова во фрагменте
+                    fragment.insert(find, "<b>");    //вставка <b> в начало слова во фрагменте
                     data[position]["snippet"] = fragment;
                     return; //выход их лямбда функции
                 }
