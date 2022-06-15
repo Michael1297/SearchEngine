@@ -21,5 +21,6 @@ public:
     int word_id(std::string value);         //id слова
     void update_word(std::string value);    //увеличить frequency на 1
     int size(std::string table);            //размер таблицы
+    std::string get_page_content(const std::string& path); //получить код страница
     nlohmann::json search(std::unordered_set<std::string>& worlds); //поиск слов в бд
 };

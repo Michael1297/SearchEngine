@@ -142,6 +142,16 @@ int SQL_database::size(std::string table) {
     return result.get<int>("count");
 }
 
+std::string SQL_database::get_page_content(const std::string& path) {
+    std::string command = fmt::format("SELECT content FROM page WHERE path=\'{}\';", to_base64(path));
+    auto result = execute(*database, command);
+    if(result.next()){
+        return from_base64(result.get<std::string>("content"));
+    } else{
+        return "";
+    }
+}
+
 nlohmann::json SQL_database::search(std::unordered_set<std::string>& worlds) {
     nlohmann::json data;
     std::map<int, float> relevance; //релевантность для конкретной страницы

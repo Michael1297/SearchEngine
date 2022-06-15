@@ -3,7 +3,6 @@
 #include <vector>
 #include <map>
 #include <cpr/cpr.h>
-#include "GumboAPI.h"
 #include "Config.h"
 
 void SearchEngine::buffer_erase(std::string& current_link) {
@@ -33,39 +32,7 @@ void SearchEngine::parsing(std::unordered_set<std::string>& worlds, std::string 
     }
 }
 
-void SearchEngine::indexing(std::string current_link, bool single, ThreadPool* thread_pool){
-    cpr::Response r = cpr::Get(cpr::Url(current_link));
-    if(r.status_code == 404 || r.status_code == 500){
-        database.insert_page(domain.getPath(current_link), r.status_code, "");     //добавить страницу в бд
-        this->buffer_erase(current_link);              //удалить страницу из буфера
-        return;
-    }
-
-    auto path = domain.getPath(current_link);
-    database.insert_page(path, r.status_code, r.text);     //добавить страницу в бд
-    this->buffer_erase(current_link);              //удалить страницу из буфера
-    int page_id = database.page_id(path);          //сохранить id добавленной страницы
-    GumboAPI html_parse(r.text);                   //парсинг страницы
-
-    mutex.lock();
-    if(!now_indexing){
-        mutex.unlock();
-        return;
-    }
-    mutex.unlock();
-
-    if(!single) {   //полная индексация
-        html_parse.get_links([this, &thread_pool](std::string links){     //получить ссылки со страницы
-            if(domain.is_ownLink(links)) {     //игнорировать ссылки сторонних сайтов
-                //индексировать если страницы нет в бд
-                if(database.page_id(domain.getPath(links)) == 0 && !buffer_sites.count(links)) {
-                    this->buffer_insert(links);
-                    thread_pool->enqueue(&SearchEngine::indexing, this, links, false, thread_pool);
-                }
-            }
-        });
-    }
-
+void SearchEngine::indexing_words(GumboAPI& html_parse, int page_id) {
     std::map<std::string, int> buffer_words;    //буфер слов
     html_parse.get_words([this, &buffer_words](std::string out){
         if(out = stemming.word_stemming(out); !out.empty()) buffer_words[out]++;    //добавление слов в буфер
@@ -86,6 +53,43 @@ void SearchEngine::indexing(std::string current_link, bool single, ThreadPool* t
         }
         mutex.unlock();
     }
+}
+
+void SearchEngine::indexing_page(GumboAPI& html_parse, ThreadPool* thread_pool) {
+    html_parse.get_links([this, &thread_pool](std::string links){     //получить ссылки со страницы
+        if(domain.is_ownLink(links)) {     //игнорировать ссылки сторонних сайтов
+            //индексировать если страницы нет в бд
+            if(database.page_id(domain.getPath(links)) == 0 && !buffer_sites.count(links)) {
+                this->buffer_insert(links);
+                thread_pool->enqueue(&SearchEngine::indexing, this, links, false, thread_pool);
+            }
+        }
+    });
+}
+
+void SearchEngine::indexing(std::string current_link, bool single, ThreadPool* thread_pool){
+    cpr::Response r = cpr::Get(cpr::Url(current_link));
+    if(r.status_code == 404 || r.status_code == 500){
+        database.insert_page(domain.getPath(current_link), r.status_code, "");     //добавить страницу в бд
+        this->buffer_erase(current_link);              //удалить страницу из буфера
+        return;
+    }
+
+    auto path = domain.getPath(current_link);
+    database.insert_page(path, r.status_code, r.text);     //добавить страницу в бд
+    this->buffer_erase(current_link);           //удалить страницу из буфера
+    int page_id = database.page_id(path);          //сохранить id добавленной страницы
+    GumboAPI html_parse(r.text);              //парсинг страницы
+
+    mutex.lock();
+    if(!now_indexing){
+        mutex.unlock();
+        return;
+    }
+    mutex.unlock();
+
+    if(!single) this->indexing_page(html_parse, thread_pool);   //полная индексация
+    this->indexing_words(html_parse, page_id);
 }
 
 nlohmann::json SearchEngine::startIndexing() {
