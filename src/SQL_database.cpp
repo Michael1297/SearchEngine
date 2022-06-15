@@ -164,14 +164,13 @@ nlohmann::json SQL_database::search(std::unordered_set<std::string>& worlds) {
     });
 
     auto* thread_pool = new ThreadPool(std::thread::hardware_concurrency());
-    int position = -1;
     std::mutex mutex;
     Stemming stemming;
 
     //добавление значений в json
     for(auto& page_relevance : relevance){
-        position++;
-        thread_pool->enqueue([&, position, page_relevance](){
+        thread_pool->enqueue([&, page_relevance](){
+            nlohmann::json search_result;
             std::string command = fmt::format("SELECT content, path FROM page WHERE id={};", page_relevance.first);
             auto result = execute(*database, command);
             result.next();
@@ -187,18 +186,17 @@ nlohmann::json SQL_database::search(std::unordered_set<std::string>& worlds) {
                         auto find = fragment.find(word);
                         fragment.insert(find + word.size(), "</b>"); //вставка </b> в конец слова во фрагменте
                         fragment.insert(find, "<b>");    //вставка <b> в начало слова во фрагменте
-                        mutex.lock();
-                        data[position]["snippet"] = fragment;
-                        mutex.unlock();
+                        search_result["snippet"] = fragment;
                         return; //выход их лямбда функции
                     }
                 }
             });
 
+            search_result["title"] = html_parse.find_title();
+            search_result["uri"] = from_base64(result.get<std::string>("path"));
+            search_result["relevance"] = page_relevance.second / max_relevance->second;
             mutex.lock();
-            data[position]["title"] = html_parse.find_title();
-            data[position]["uri"] = from_base64(result.get<std::string>("path"));
-            data[position]["relevance"] = page_relevance.second / max_relevance->second;
+            data.push_back(search_result);
             mutex.unlock();
         });
     }
