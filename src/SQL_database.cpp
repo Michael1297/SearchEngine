@@ -1,6 +1,7 @@
 #include "SQL_database.h"
 #include <unordered_set>
 #include <fmt/core.h>
+#include <ThreadPool/ThreadPool.h>
 #include <base64/include/base64.hpp>    //base64 требуется из-за проблем при добавлении текста
 #include "Config.h"
 #include "Exception.h"
@@ -162,35 +163,44 @@ nlohmann::json SQL_database::search(std::unordered_set<std::string>& worlds) {
         return first.second < second.second;
     });
 
+    auto* thread_pool = new ThreadPool(std::thread::hardware_concurrency());
+    std::mutex mutex;
     Stemming stemming;
+
     //добавление значений в json
-    for(auto& page_relevance : relevance){
-        auto position = data.size();
-
-        std::string command = fmt::format("SELECT content, path FROM page WHERE id={};", page_relevance.first);
-        auto result = execute(*database, command);
-        result.next();
-        GumboAPI html_parse(from_base64(result.get<std::string>("content")));
-
-        html_parse.get_fragments([&](std::string fragment){      //получение фрагмента содержащего редкое слово
-            std::stringstream text(fragment);
-            while(!text.eof()){                //парсинг фрагмент
-                std::string word;
-                text >> word;
-                if(worlds.count(stemming.word_stemming(word))){     //если найденное слово находится среди слов, заданных в поиске
-                    auto find = fragment.find(word);
-                    fragment.insert(find + word.size(), "</b>"); //вставка </b> в конец слова во фрагменте
-                    fragment.insert(find, "<b>");    //вставка <b> в начало слова во фрагменте
-                    data[position]["snippet"] = fragment;
-                    return; //выход их лямбда функции
+    for(int page_id = 0; page_id < relevance.size(); page_id++){
+        thread_pool->enqueue([&, page_id](){
+            std::string command = fmt::format("SELECT content, path FROM page WHERE id={};", page_id);
+            auto result = execute(*database, command);
+            result.next();
+            GumboAPI html_parse(from_base64(result.get<std::string>("content")));
+            //получение фрагмента содержащего редкое слово
+            html_parse.get_fragments([&](std::string fragment){
+                std::stringstream text(fragment);
+                while(!text.eof()){                //парсинг фрагмент
+                    std::string word;
+                    text >> word;
+                    if(worlds.count(stemming.word_stemming(word))){     //если найденное слово находится среди слов, заданных в поиске
+                        auto find = fragment.find(word);
+                        fragment.insert(find + word.size(), "</b>"); //вставка </b> в конец слова во фрагменте
+                        fragment.insert(find, "<b>");    //вставка <b> в начало слова во фрагменте
+                        mutex.lock();
+                        data[page_id]["snippet"] = fragment;
+                        mutex.unlock();
+                        return; //выход их лямбда функции
+                    }
                 }
-            }
+            });
+
+            mutex.lock();
+            data[page_id]["title"] = html_parse.find_title();
+            data[page_id]["uri"] = from_base64(result.get<std::string>("path"));
+            data[page_id]["relevance"] = relevance[page_id] / max_relevance->second;
+            mutex.unlock();
         });
-        data[position]["title"] = html_parse.find_title();
-        data[position]["uri"] = from_base64(result.get<std::string>("path"));
-        data[position]["relevance"] = page_relevance.second / max_relevance->second;
     }
 
+    delete thread_pool;
     //сортировка json по значению relevance
     std::sort(data.begin(), data.end(), [](nlohmann::json& first, nlohmann::json& second){
         return first["relevance"] > second["relevance"];
