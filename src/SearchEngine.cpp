@@ -166,14 +166,14 @@ nlohmann::json SearchEngine::status() {
     return status;
 }
 
-nlohmann::json SearchEngine::search(std::string query, int offset, int limit) {
+nlohmann::json SearchEngine::search(const std::string& query, int offset, int limit) {
     nlohmann::json status;
     if(query.empty()){
         status["result"] = false;
         status["error"] = "An empty search query is set!";
         return status;
     }
-    while(query.front() == '+' && !query.empty()) query.erase(query.begin()); //добавлено на случай если запрос некорректный и 1 символом будет +
+
     std::unordered_set<std::string> worlds;
     this->parsing(worlds, query, true);
 

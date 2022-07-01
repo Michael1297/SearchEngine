@@ -71,7 +71,7 @@ void SQL_database::create() {
     execute(*database, command);
 }
 
-void SQL_database::drop(std::string table) {
+void SQL_database::drop(const std::string& table) {
     std::string command = fmt::format("DROP TABLE {} CASCADE;", table);
     try{
         execute(*database, command);
@@ -79,12 +79,12 @@ void SQL_database::drop(std::string table) {
     catch (...) {}  //если таблицы не существует
 }
 
-void SQL_database::insert_page(std::string path, int code, std::string content) {
+void SQL_database::insert_page(const std::string& path, int code, const std::string& content) {
     std::string command = fmt::format(R"(INSERT INTO page(path, code, content) VALUES('{}', {}, '{}');)", to_base64(path), code, to_base64(content));
     execute(*database, command);
 }
 
-int SQL_database::page_id(std::string path) {
+int SQL_database::page_id(const std::string& path) {
     std::string command = fmt::format(R"(SELECT id FROM page WHERE path='{}' LIMIT 1;)", to_base64(path));
     auto result = execute(*database, command);
     if(result.next()) {
@@ -94,12 +94,12 @@ int SQL_database::page_id(std::string path) {
     }
 }
 
-void SQL_database::insert_word(std::string value) {
+void SQL_database::insert_word(const std::string& value) {
     std::string command = fmt::format(R"(INSERT INTO word(value, frequency) VALUES ('{}', 1);)", to_base64(value));
     execute(*database, command);
 }
 
-int SQL_database::word_id(std::string value) {
+int SQL_database::word_id(const std::string& value) {
     std::string command = fmt::format(R"(SELECT id FROM word WHERE value='{}' LIMIT 1;)", to_base64(value));
     auto result = execute(*database, command);
     if(result.next()) {
@@ -109,7 +109,7 @@ int SQL_database::word_id(std::string value) {
     }
 }
 
-void SQL_database::update_word(std::string value) {
+void SQL_database::update_word(const std::string& value) {
     std::string command = fmt::format(R"(UPDATE word SET frequency=frequency+1 WHERE value='{}';)", to_base64(value));
     execute(*database, command);
 }
@@ -135,14 +135,14 @@ void SQL_database::erase_page(std::string path) {
     execute(*database, command);
 }
 
-int SQL_database::size(std::string table) {
+int SQL_database::size(const std::string& table) {
     std::string command = fmt::format("SELECT count(*) from {};", table);
     auto result = execute(*database, command);
     result.next();
     return result.get<int>("count");
 }
 
-std::string SQL_database::get_page_content(const std::string& path) {
+[[maybe_unused]] std::string SQL_database::get_page_content(const std::string& path) {
     std::string command = fmt::format("SELECT content FROM page WHERE path=\'{}\';", to_base64(path));
     auto result = execute(*database, command);
     if(result.next()){
@@ -187,18 +187,26 @@ nlohmann::json SQL_database::search(std::unordered_set<std::string>& worlds) {
             GumboAPI html_parse(from_base64(result.get<std::string>("content")));
 
             //получение фрагмента содержащего редкое слово
-            html_parse.get_fragments([&](std::string fragment){
-                std::stringstream text(fragment);
-                while(!text.eof()){                //парсинг фрагмент
+            html_parse.get_fragments([&](const std::string& fragment){
+                std::stringstream current_fragment(fragment);   //фрагмент используемый для парсинга текста
+                std::stringstream new_fragment;     //буффер для хранения результата
+                bool is_find = false;   //фрагмент найден
+                bool is_empty = true;   //если new_fragment еще пустой - (еще нет первого слова)
+
+                while(!current_fragment.eof()){                //парсинг фрагмент
                     std::string word;
-                    text >> word;
+                    current_fragment >> word;
                     if(worlds.count(stemming.word_stemming(word))){     //если найденное слово находится среди слов, заданных в поиске
-                        auto find = fragment.find(word);
-                        fragment.insert(find + word.size(), "</b>"); //вставка </b> в конец слова во фрагменте
-                        fragment.insert(find, "<b>");    //вставка <b> в начало слова во фрагменте
-                        search_result["snippet"] = fragment;
-                        return; //выход их лямбда функции
+                        new_fragment << (is_empty ? "" : " ") << "<b>" << word << "</b>";
+                        is_find = true;
+                    } else{
+                        new_fragment << (is_empty ? "" : " ") << word;
                     }
+                    is_empty = false;
+                }
+                if(is_find) {
+                    search_result["snippet"] = new_fragment.str();
+                    return;
                 }
             });
 
@@ -214,7 +222,8 @@ nlohmann::json SQL_database::search(std::unordered_set<std::string>& worlds) {
     delete thread_pool;
     //сортировка json по значению relevance
     std::sort(data.begin(), data.end(), [](nlohmann::json& first, nlohmann::json& second){
-        return first["relevance"] > second["relevance"];
+        return first["relevance"] > second["relevance"]
+            || first["relevance"] == second["relevance"] && first["uri"] < second["uri"];
     });
     return data;
 }

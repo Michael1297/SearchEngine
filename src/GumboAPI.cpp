@@ -2,7 +2,7 @@
 #include <sstream>
 #include <cassert>
 
-void GumboAPI::get_links(std::function<void(std::string)> function, GumboNode *node) {
+void GumboAPI::get_links(const std::function<void(std::string)>& function, GumboNode *node) {
     if(node == nullptr) node = output->root;
     assert(node != nullptr);
     if (node->type != GUMBO_NODE_ELEMENT) return;
@@ -19,7 +19,7 @@ void GumboAPI::get_links(std::function<void(std::string)> function, GumboNode *n
     }
 }
 
-void GumboAPI::get_fragments(std::function<void(std::string)> function, GumboNode *node) {
+void GumboAPI::get_fragments(const std::function<void(std::string)>& function, GumboNode *node) {
     if(node == nullptr) node = output->root;
     assert(node != nullptr);
     if (node->type == GUMBO_NODE_TEXT) {    //получение текста
@@ -35,12 +35,12 @@ void GumboAPI::get_fragments(std::function<void(std::string)> function, GumboNod
 }
 
 void GumboAPI::get_words(std::function<void(std::string)> function) {
-    this->get_fragments([&function](std::string out){
+    this->get_fragments([&function](const std::string& out){
         std::stringstream text(out);
         while(!text.eof()){                //парсинг текста
-            std::string out;
-            text >> out;
-            function(out);     //вывод слов
+            std::string word;
+            text >> word;
+            function(word);     //вывод слов
         }
     });
 }
@@ -51,26 +51,26 @@ const std::string GumboAPI::find_title() {
     assert(root->v.element.children.length >= 2);
 
     const GumboVector* root_children = &root->v.element.children;
-    GumboNode* head = NULL;
+    GumboNode* head = nullptr;
     for (int i = 0; i < root_children->length; ++i) {
-        GumboNode* child = (GumboNode*) root_children->data[i];
+        auto* child = (GumboNode*) root_children->data[i];
         if (child->type == GUMBO_NODE_ELEMENT &&
             child->v.element.tag == GUMBO_TAG_HEAD) {
             head = child;
             break;
         }
     }
-    assert(head != NULL);
+    assert(head != nullptr);
 
     GumboVector* head_children = &head->v.element.children;
     for (int i = 0; i < head_children->length; ++i) {
-        GumboNode* child = (GumboNode*) head_children->data[i];
+        auto* child = (GumboNode*) head_children->data[i];
         if (child->type == GUMBO_NODE_ELEMENT &&
             child->v.element.tag == GUMBO_TAG_TITLE) {
             if (child->v.element.children.length != 1) {
                 return " ";
             }
-            GumboNode* title_text = (GumboNode*) child->v.element.children.data[0];
+            auto* title_text = (GumboNode*) child->v.element.children.data[0];
             assert(title_text->type == GUMBO_NODE_TEXT || title_text->type == GUMBO_NODE_WHITESPACE);
             return title_text->v.text.text;
         }
@@ -78,7 +78,7 @@ const std::string GumboAPI::find_title() {
     return " ";
 }
 
-GumboAPI::GumboAPI(std::string code){
+GumboAPI::GumboAPI(const std::string& code){
     output = gumbo_parse(code.c_str());
 }
 

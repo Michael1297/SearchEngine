@@ -50,6 +50,6 @@ bool HttpTool::is_ownLink(std::string& link) {
     }
 }
 
-std::string HttpTool::getDomain(){
+[[maybe_unused]] std::string HttpTool::getDomain(){
     return domain;
 }

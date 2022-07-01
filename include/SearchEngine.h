@@ -31,5 +31,5 @@ public:
     nlohmann::json startIndexing(std::string queurls);
     nlohmann::json stopIndexing();
     nlohmann::json status();
-    nlohmann::json search(std::string query, int offset, int limit);
+    nlohmann::json search(const std::string& query, int offset, int limit);
 };

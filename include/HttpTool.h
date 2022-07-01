@@ -12,7 +12,7 @@ class HttpTool{
 public:
     HttpTool();
     bool is_ownLink(std::string& link);                      //проверить принадлежность ссылки к домену
-    std::string getDomain();                                 //получить начальный домен
+    [[maybe_unused]] std::string getDomain();                //получить начальный домен
     std::string getDomain(std::string link);                 //получить домен из ссылки
     std::string getPath(std::string link);                   //получить path
     static void escape(std::string& text, char symbol);      //экранирование символов '.'
