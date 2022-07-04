@@ -32,7 +32,10 @@ SQL_database::SQL_database() {   //подключиться к бд
         tables.insert(result.get<std::string>("table_name"));
     }
     //если таблицы не существуют, то создать заново
-    if(tables.size() != 3 || !tables.count("page") || !tables.count("word") || !tables.count("search_index")) this->create();
+    if(tables.size() != 3 || !tables.count("page") || !tables.count("word") || !tables.count("search_index")) {
+        for(auto& table : tables) this->drop(table);
+        this->create();
+    }
 }
 
 SQL_database::~SQL_database(){
