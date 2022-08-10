@@ -3,8 +3,6 @@
 #include <cassert>
 
 void GumboAPI::get_links(const std::function<void(std::string)>& function, GumboNode *node) {
-    if(node == nullptr) node = output->root;
-    assert(node != nullptr);
     if (node->type != GUMBO_NODE_ELEMENT) return;
 
     GumboAttribute* href;
@@ -19,9 +17,12 @@ void GumboAPI::get_links(const std::function<void(std::string)>& function, Gumbo
     }
 }
 
+void GumboAPI::get_links(const std::function<void(std::string)>& function) {
+    assert(output != nullptr);
+    this->get_links(function, output->root);
+}
+
 void GumboAPI::get_fragments(const std::function<void(std::string)>& function, GumboNode *node) {
-    if(node == nullptr) node = output->root;
-    assert(node != nullptr);
     if (node->type == GUMBO_NODE_TEXT) {    //получение текста
         function(node->v.text.text);    //вывод текста
     } else if (node->type == GUMBO_NODE_ELEMENT &&
@@ -32,6 +33,11 @@ void GumboAPI::get_fragments(const std::function<void(std::string)>& function, G
             this->get_fragments(function, (GumboNode*) children->data[i]);
         }
     }
+}
+
+void GumboAPI::get_fragments(const std::function<void(std::string)> &function) {
+    assert(output != nullptr);
+    this->get_fragments(function, output->root);
 }
 
 void GumboAPI::get_words(std::function<void(std::string)> function) {
@@ -45,7 +51,7 @@ void GumboAPI::get_words(std::function<void(std::string)> function) {
     });
 }
 
-const std::string GumboAPI::find_title() {
+std::string GumboAPI::find_title() {
     const GumboNode* root = output->root;
     assert(root->type == GUMBO_NODE_ELEMENT);
     assert(root->v.element.children.length >= 2);
