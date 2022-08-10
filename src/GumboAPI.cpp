@@ -40,7 +40,7 @@ void GumboAPI::get_fragments(const std::function<void(std::string)> &function) {
     this->get_fragments(function, output->root);
 }
 
-void GumboAPI::get_words(std::function<void(std::string)> function) {
+void GumboAPI::get_words(const std::function<void(std::string)>& function) {
     this->get_fragments([&function](const std::string& out){
         std::stringstream text(out);
         while(!text.eof()){                //парсинг текста

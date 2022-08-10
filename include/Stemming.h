@@ -9,6 +9,7 @@ class Stemming{
     stemming::russian_stem<> StemRussian;
     std::regex ru_word_regex = std::regex("[а-я]", std::regex::icase);
     std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+
 public:
     std::string WStringToString(const std::wstring& Wstring);      //wstring преобразовать в string
     std::wstring StringToWString(const std::string& string);       //string преобразовать в wstring

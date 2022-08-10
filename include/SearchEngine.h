@@ -25,8 +25,8 @@ class SearchEngine{
     void buffer_insert(std::string& link);                  //добавить страницу в буфер
     void buffer_erase(std::string& current_link);           //удалить страницу из буфера
     void parsing(std::unordered_set<std::string>& worlds, std::string text, bool is_word);  //парсинг запроса
-public:
 
+public:
     nlohmann::json startIndexing();
     nlohmann::json startIndexing(std::string queurls);
     nlohmann::json stopIndexing();
